@@ -28,7 +28,7 @@ jobs:
         uses: actions/setup-node@v4
       - run: |
           corepack enable
-          npm install
+          yarn install
         name: Install dependencies
       - run: yarn bundle
         name: Create bundle

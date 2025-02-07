@@ -2,12 +2,6 @@
   "type": "module",
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "build": "yarn bundle && node dist/app.cjs build",
-    "new": "yarn bundle && node dist/app.cjs new",
-    "watch": "nodemon",
-    "deploy": "firebase deploy",
-    "clean": "rm cache && rm -rf public",
-    "clean-build": "yarn clean && yarn build",
     "bundle": "rm -rf dist && spago build && node bundle.js"
   },
   "dependencies": {
@@ -16,25 +10,11 @@
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "markdown-it": "^13.0.1",
-    "nodemon": "^2.0.22",
     "purescript": "0.15.9",
     "purty": "^7.0.0",
     "spago": "0.21.0",
     "tailwindcss": "^3.3.2",
     "turndown": "^7.1.2"
-  },
-  "nodemonConfig": {
-    "exec": "yarn spago run -m Main -a \"build\"",
-    "ext": "purs css html yml md",
-    "watch": [
-      "./src",
-      "./templates",
-      "./contents",
-      "./tailwind.config.js"
-    ],
-    "ignore": [
-      "./tmp"
-    ]
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
