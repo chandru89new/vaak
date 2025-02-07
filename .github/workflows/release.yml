@@ -51,3 +51,4 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./dist/app.cjs
           asset_name: vaak.cjs
+          asset_content_type: application/javascript
