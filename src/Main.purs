@@ -48,6 +48,46 @@ main = do
                 log $ show err
               Right _ -> log "Done."
 
+buildSite :: ExceptT Error Aff Unit
+buildSite = do
+  log "\nStarting..."
+  _ <- createFolderIfNotPresent tmpFolder
+  { postsToPublish, postsToRebuild } <- getPostsAndSort
+  log "Generating posts pages..."
+  _ <- generatePostsHTML postsToRebuild
+  log "Generating posts pages: Done!\n"
+  log "Generating archive page..."
+  -- _ <- createFullArchivePage postsToPublish
+  _ <- writeArchiveByYearPage postsToPublish
+  log "Generating archive page: Done!\n"
+  log "Generating home page..."
+  _ <- createHomePage postsToPublish
+  log "Generating home page: Done!\n"
+  log "Copying 404.html..."
+  _ <- ExceptT $ try $ liftEffect $ execSync ("cp " <> templatesFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
+  log "Copying 404.html: Done!\n"
+  log "Copying images folder..."
+  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
+  log "Copying images folder: Done!\n"
+  log "Copying js folder..."
+  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
+  log "Copying js folder: Done!\n"
+  log "Generating styles.css..."
+  log "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
+  _ <- generateStyles
+  log "Generating styles.css: Done!\n"
+  log "Generating RSS feed..."
+  _ <- Rss.generateRSSFeed postsToPublish
+  log "Generating RSS feed: Done!\n"
+  _ <- cleanupNodeModules
+  log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder
+  _ <- createFolderIfNotPresent htmlOutputFolder
+  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> htmlOutputFolder) defaultExecSyncOptions
+  log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder <> ":Done!\n"
+  log "Updating cache..."
+  _ <- ExceptT $ try $ Cache.writeCacheData
+  log "Updating cache: Done!\n"
+
 newtype Template
   = Template String
 
@@ -105,45 +145,6 @@ replaceContentInTemplate (Template template) pd =
 
 readPostTemplate :: ExceptT Error Aff String
 readPostTemplate = ExceptT $ try $ readTextFile UTF8 blogpostTemplate
-
-buildSite :: ExceptT Error Aff Unit
-buildSite = do
-  log "\nStarting..."
-  _ <- createFolderIfNotPresent tmpFolder
-  { postsToPublish, postsToRebuild } <- getPostsAndSort
-  log "Generating posts pages..."
-  _ <- generatePostsHTML postsToRebuild
-  log "Generating posts pages: Done!\n"
-  log "Generating archive page..."
-  -- _ <- createFullArchivePage postsToPublish
-  _ <- writeArchiveByYearPage postsToPublish
-  log "Generating archive page: Done!\n"
-  log "Generating home page..."
-  _ <- createHomePage postsToPublish
-  log "Generating home page: Done!\n"
-  log "Copying 404.html..."
-  _ <- ExceptT $ try $ liftEffect $ execSync ("cp " <> templatesFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
-  log "Copying 404.html: Done!\n"
-  log "Copying images folder..."
-  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> templatesFolder <> "/images " <> tmpFolder) defaultExecSyncOptions
-  log "Copying images folder: Done!\n"
-  log "Copying js folder..."
-  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> templatesFolder <> "/js " <> tmpFolder) defaultExecSyncOptions
-  log "Copying js folder: Done!\n"
-  log "Generating styles.css..."
-  log "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
-  _ <- generateStyles
-  log "Generating styles.css: Done!\n"
-  log "Generating RSS feed..."
-  _ <- Rss.generateRSSFeed postsToPublish
-  log "Generating RSS feed: Done!\n"
-  log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder
-  _ <- createFolderIfNotPresent htmlOutputFolder
-  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> htmlOutputFolder) defaultExecSyncOptions
-  log "Copying /tmp to /public: Done!\n"
-  log "Updating cache..."
-  _ <- ExceptT $ try $ Cache.writeCacheData
-  log "Updating cache: Done!\n"
 
 -- createFullArchivePage :: Array FormattedMarkdownData -> ExceptT Error Aff Unit
 -- createFullArchivePage sortedArray = do
@@ -295,3 +296,8 @@ dummyData =
 
 createNewPost :: String -> ExceptT Error Effect Buffer
 createNewPost slug = ExceptT $ try $ execSync ("cp " <> newPostTemplate <> " " <> rawContentsFolder <> "/" <> slug <> ".md") defaultExecSyncOptions
+
+cleanupNodeModules :: ExceptT Error Aff Buffer
+cleanupNodeModules = ExceptT $ try $ liftEffect $ execSync "rm -rf node_modules package-lock.json package.json" options
+  where
+  options = defaultExecSyncOptions { cwd = Just tmpFolder }
