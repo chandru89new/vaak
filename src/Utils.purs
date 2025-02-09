@@ -2,7 +2,7 @@ module Utils where
 
 import Prelude
 import Data.Either (Either(..))
-import Effect.Aff (Aff, try)
+import Effect.Aff (Aff, error, throwError, try)
 import Node.FS.Aff (mkdir, readdir)
 
 templatesFolder :: String
