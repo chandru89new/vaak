@@ -16,7 +16,7 @@ import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Utils (rawContentsFolder)
 import Utils as U
 
--- createNewCacheLookup :: Array U.FormattedMarkdownData -> ExceptT Error Aff Unit
+-- createNewCacheLookup :: Array U.FormattedMarkdownData -> Aff Unit
 -- createNewCacheLookup fds = do
 --   statsAsArray <- statAllToString slugs
 --   ExceptT $ try $ writeTextFile UTF8 "./cache" (joinWith "\n" statsAsArray)
@@ -29,8 +29,10 @@ getStat slug = do
   case buf of
     Left _ -> pure $ { slug, stat: "" }
     Right buffer -> do
-      b <- liftEffect $ toString UTF8 buffer
-      pure { slug, stat: b }
+      b <- try $ liftEffect $ toString UTF8 buffer
+      case b of
+        Right s -> pure { slug, stat: s }
+        Left _ -> pure { slug, stat: "" }
 
 getStatAll :: Array String -> Aff (Array { slug :: String, stat :: String })
 getStatAll slugs = parTraverse getStat slugs
@@ -41,7 +43,7 @@ writeCacheData = do
   _ <- try $ writeTextFile UTF8 "./.cache" cacheData
   pure unit
 
-createCacheData :: Aff (String)
+createCacheData :: Aff String
 createCacheData = do
   contents <- try $ readdir rawContentsFolder
   unwrapped <- pure $ either (\_ -> []) (filter (contains (Pattern ".md")) >>> (map $ replace (Pattern ".md") (Replacement ""))) contents

@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 import Cache as Cache
-import Control.Monad.Except (ExceptT(..), runExceptT, throwError)
+import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Parallel (parTraverse, parTraverse_)
 import Data.Array (catMaybes, drop, filter, find, foldl, head, sortBy, take)
 import Data.Array as Array
@@ -14,7 +14,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), Replacement(..), contains, joinWith, replaceAll, split)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff (Aff, Error, error, launchAff_, try)
+import Effect.Aff (Aff, Error, launchAff_, try)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Node.Buffer (Buffer)
@@ -49,44 +49,46 @@ main = do
               Right _ -> log "Done."
 
 buildSite :: ExceptT Error Aff Unit
-buildSite = do
-  log "\nStarting..."
-  _ <- createFolderIfNotPresent tmpFolder
-  { postsToPublish, postsToRebuild } <- getPostsAndSort
-  log "Generating posts pages..."
-  _ <- generatePostsHTML postsToRebuild
-  log "Generating posts pages: Done!\n"
-  log "Generating archive page..."
-  -- _ <- createFullArchivePage postsToPublish
-  _ <- writeArchiveByYearPage postsToPublish
-  log "Generating archive page: Done!\n"
-  log "Generating home page..."
-  _ <- createHomePage postsToPublish
-  log "Generating home page: Done!\n"
-  log "Copying 404.html..."
-  _ <- ExceptT $ try $ liftEffect $ execSync ("cp " <> templatesFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
-  log "Copying 404.html: Done!\n"
-  log "Copying images folder..."
-  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
-  log "Copying images folder: Done!\n"
-  log "Copying js folder..."
-  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
-  log "Copying js folder: Done!\n"
-  log "Generating styles.css..."
-  log "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
-  _ <- generateStyles
-  log "Generating styles.css: Done!\n"
-  log "Generating RSS feed..."
-  _ <- Rss.generateRSSFeed postsToPublish
-  log "Generating RSS feed: Done!\n"
-  _ <- cleanupNodeModules
-  log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder
-  _ <- createFolderIfNotPresent htmlOutputFolder
-  _ <- ExceptT $ try $ liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> htmlOutputFolder) defaultExecSyncOptions
-  log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder <> ":Done!\n"
-  log "Updating cache..."
-  _ <- ExceptT $ try $ Cache.writeCacheData
-  log "Updating cache: Done!\n"
+buildSite =
+  ExceptT $ try
+    $ do
+        log "\nStarting..."
+        _ <- createFolderIfNotPresent tmpFolder
+        { postsToPublish, postsToRebuild } <- getPostsAndSort
+        log "Generating posts pages..."
+        _ <- generatePostsHTML postsToRebuild
+        log "Generating posts pages: Done!\n"
+        log "Generating archive page..."
+        -- _ <- createFullArchivePage postsToPublish
+        _ <- writeArchiveByYearPage postsToPublish
+        log "Generating archive page: Done!\n"
+        log "Generating home page..."
+        _ <- createHomePage postsToPublish
+        log "Generating home page: Done!\n"
+        log "Copying 404.html..."
+        _ <- liftEffect $ execSync ("cp " <> templatesFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
+        log "Copying 404.html: Done!\n"
+        log "Copying images folder..."
+        _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
+        log "Copying images folder: Done!\n"
+        log "Copying js folder..."
+        _ <- liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
+        log "Copying js folder: Done!\n"
+        log "Generating styles.css..."
+        log "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
+        _ <- generateStyles
+        log "Generating styles.css: Done!\n"
+        log "Generating RSS feed..."
+        _ <- Rss.generateRSSFeed postsToPublish
+        log "Generating RSS feed: Done!\n"
+        _ <- cleanupNodeModules
+        log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder
+        _ <- createFolderIfNotPresent htmlOutputFolder
+        _ <- liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> htmlOutputFolder) defaultExecSyncOptions
+        log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder <> ":Done!\n"
+        log "Updating cache..."
+        _ <- Cache.writeCacheData
+        log "Updating cache: Done!\n"
 
 newtype Template
   = Template String
@@ -109,28 +111,26 @@ mkCommand xs = case head (drop 2 xs) of
     _ -> Invalid
   _ -> Invalid
 
-readFileToData :: String -> ExceptT Error Aff FormattedMarkdownData
+readFileToData :: String -> Aff FormattedMarkdownData
 readFileToData filePath = do
-  contents <- ExceptT $ try $ readTextFile UTF8 filePath
+  contents <- readTextFile UTF8 filePath
   pure $ md2FormattedData contents
 
-writeHTMLFile :: Template -> FormattedMarkdownData -> ExceptT Error Aff Unit
-writeHTMLFile template pd@{ frontMatter } =
-  ExceptT
-    $ do
-        res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> frontMatter.slug <> ".html") (replaceContentInTemplate template pd)
-        _ <- case res of
-          Left err -> log $ "Could not write " <> frontMatter.slug <> ".md to html (" <> show err <> ")"
-          Right _ -> log $ rawContentsFolder <> "/" <> frontMatter.slug <> ".md -> " <> tmpFolder <> "/" <> frontMatter.slug <> ".html" <> " = success!"
-        pure res
+writeHTMLFile :: Template -> FormattedMarkdownData -> Aff Unit
+writeHTMLFile template pd@{ frontMatter } = do
+  res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> frontMatter.slug <> ".html") (replaceContentInTemplate template pd)
+  _ <- case res of
+    Left err -> log $ "Could not write " <> frontMatter.slug <> ".md to html (" <> show err <> ")"
+    Right _ -> log $ rawContentsFolder <> "/" <> frontMatter.slug <> ".md -> " <> tmpFolder <> "/" <> frontMatter.slug <> ".html" <> " = success!"
+  pure unit
 
-getFilesAndTemplate :: ExceptT Error Aff { files :: Array String, template :: String }
+getFilesAndTemplate :: Aff { files :: Array String, template :: String }
 getFilesAndTemplate = do
-  files <- ExceptT $ try $ readdir rawContentsFolder
+  files <- readdir rawContentsFolder
   template <- readPostTemplate
   pure { files, template }
 
-generatePostsHTML :: Array FormattedMarkdownData -> ExceptT Error Aff Unit
+generatePostsHTML :: Array FormattedMarkdownData -> Aff Unit
 generatePostsHTML fds = do
   template <- readPostTemplate
   _ <- parTraverse_ (\f -> writeHTMLFile (Template template) f) fds
@@ -143,27 +143,26 @@ replaceContentInTemplate (Template template) pd =
     # replaceAll (Pattern "{{date}}") (Replacement $ formatDate "MMM DD, YYYY" pd.frontMatter.date)
     # replaceAll (Pattern "{{page_title}}") (Replacement pd.frontMatter.title)
 
-readPostTemplate :: ExceptT Error Aff String
-readPostTemplate = ExceptT $ try $ readTextFile UTF8 blogpostTemplate
+readPostTemplate :: Aff String
+readPostTemplate = readTextFile UTF8 blogpostTemplate
 
--- createFullArchivePage :: Array FormattedMarkdownData -> ExceptT Error Aff Unit
+-- createFullArchivePage :: Array FormattedMarkdownData -> Aff Unit
 -- createFullArchivePage sortedArray = do
 --   content <- (toHTML sortedArray)
 --   writeFullArchivePage content
 --   where
---   toHTML :: Array FormattedMarkdownData -> ExceptT Error Aff String
+--   toHTML :: Array FormattedMarkdownData -> Aff String
 --   toHTML fd = do
 --     template <- ExceptT $ try $ readTextFile UTF8 archiveTemplate
 --     pure $ replaceAll (Pattern "{{content}}") (Replacement $ "<ul>" <> content <> "</ul>") template
 --     where
 --     content = foldl fn "" fd
 --     fn b a = b <> "<li><a href=\"./" <> a.frontMatter.slug <> "\">" <> a.frontMatter.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.frontMatter.date <> "</span>" <> "</li>"
---   writeFullArchivePage :: String -> ExceptT Error Aff Unit
+--   writeFullArchivePage :: String -> Aff Unit
 --   writeFullArchivePage str = ExceptT $ try $ writeTextFile UTF8 (tmpFolder <> "/archive.html") str
-generateStyles :: ExceptT Error Aff Buffer
+generateStyles :: Aff Buffer
 generateStyles =
-  ExceptT $ try
-    $ liftEffect
+  liftEffect
     $ do
         _ <- execSync copyStyleFileToTmp defaultExecSyncOptions
         _ <- execSync installTailwindDeps options
@@ -190,16 +189,16 @@ recentPosts n xs =
 
         fn b a = b <> "<li><a href=\"/" <> a.frontMatter.slug <> "\">" <> a.frontMatter.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.frontMatter.date <> "</span>" <> "</li>"
 
-createHomePage :: Array FormattedMarkdownData -> ExceptT Error Aff Unit
+createHomePage :: Array FormattedMarkdownData -> Aff Unit
 createHomePage sortedArrayofPosts = do
   recentsString <- pure $ recentPosts 3 sortedArrayofPosts
-  template <- ExceptT $ try $ readTextFile UTF8 homepageTemplate
+  template <- readTextFile UTF8 homepageTemplate
   categories <- pure $ (getCategoriesJson unit # convertCategoriesToString)
   contents <-
     pure
       $ replaceAll (Pattern "{{recent_posts}}") (Replacement recentsString) template
       # replaceAll (Pattern "{{posts_by_categories}}") (Replacement categories)
-  ExceptT $ try $ writeTextFile UTF8 (tmpFolder <> "/index.html") contents
+  writeTextFile UTF8 (tmpFolder <> "/index.html") contents
   where
   convertCategoriesToString :: Array U.Category -> String
   convertCategoriesToString = foldl fn ""
@@ -221,18 +220,18 @@ createHomePage sortedArrayofPosts = do
 
   fn2 b a = b <> "<li><a href=\"./" <> a.frontMatter.slug <> "\">" <> a.frontMatter.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.frontMatter.date <> "</span></li>"
 
-getPostsAndSort :: ExceptT Error Aff ({ postsToPublish :: Array FormattedMarkdownData, postsToRebuild :: Array FormattedMarkdownData })
+getPostsAndSort :: Aff ({ postsToPublish :: Array FormattedMarkdownData, postsToRebuild :: Array FormattedMarkdownData })
 getPostsAndSort = do
-  filePaths <- ExceptT $ try $ readdir rawContentsFolder
+  filePaths <- readdir rawContentsFolder
   onlyMarkdownFiles <- pure $ filter (contains (Pattern ".md")) filePaths
-  oldCacheData <- ExceptT $ try $ Cache.readCacheData
-  newCacheData <- ExceptT $ try $ Cache.createCacheData
+  oldCacheData <- Cache.readCacheData
+  newCacheData <- Cache.createCacheData
   formattedDataArray <- filePathsToProcessedData onlyMarkdownFiles
   removeIgnored <- pure $ filter (\f -> not f.frontMatter.ignore) formattedDataArray
   removeCached <- pure $ filter (\f -> Cache.needsInvalidation oldCacheData newCacheData f.frontMatter.slug) removeIgnored
   pure $ { postsToPublish: sortPosts removeIgnored, postsToRebuild: sortPosts removeCached }
   where
-  filePathsToProcessedData :: Array String -> ExceptT Error Aff (Array FormattedMarkdownData)
+  filePathsToProcessedData :: Array String -> Aff (Array FormattedMarkdownData)
   filePathsToProcessedData fpaths = parTraverse (\f -> readFileToData $ rawContentsFolder <> "/" <> f) fpaths
 
 sortPosts :: Array FormattedMarkdownData -> Array FormattedMarkdownData
@@ -278,14 +277,12 @@ groupedPostsToHTML groupedPosts =
   in
     result
 
-writeArchiveByYearPage :: Array FormattedMarkdownData -> ExceptT Error Aff Unit
-writeArchiveByYearPage fds =
-  ExceptT $ try
-    $ do
-        contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds
-        templateContents <- readTextFile UTF8 $ archiveTemplate
-        replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
-        writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
+writeArchiveByYearPage :: Array FormattedMarkdownData -> Aff Unit
+writeArchiveByYearPage fds = do
+  contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds
+  templateContents <- readTextFile UTF8 $ archiveTemplate
+  replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
+  writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
 
 dummyData :: Array FormattedMarkdownData
 dummyData =
@@ -299,7 +296,7 @@ dummyData =
 createNewPost :: String -> ExceptT Error Effect Buffer
 createNewPost slug = ExceptT $ try $ execSync ("cp " <> newPostTemplate <> " " <> rawContentsFolder <> "/" <> slug <> ".md") defaultExecSyncOptions
 
-cleanupNodeModules :: ExceptT Error Aff Buffer
-cleanupNodeModules = ExceptT $ try $ liftEffect $ execSync "rm -rf node_modules package-lock.json package.json" options
+cleanupNodeModules :: Aff Buffer
+cleanupNodeModules = liftEffect $ execSync "rm -rf node_modules package-lock.json package.json" options
   where
   options = defaultExecSyncOptions { cwd = Just tmpFolder }
