@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 import Cache as Cache
-import Control.Monad.Except (ExceptT(..), runExceptT)
+import Control.Monad.Except (ExceptT(..), runExceptT, throwError)
 import Control.Parallel (parTraverse, parTraverse_)
 import Data.Array (catMaybes, drop, filter, find, foldl, head, sortBy, take)
 import Data.Array as Array
@@ -14,7 +14,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), Replacement(..), contains, joinWith, replaceAll, split)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff (Aff, Error, launchAff_, try)
+import Effect.Aff (Aff, Error, error, launchAff_, try)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Node.Buffer (Buffer)
@@ -279,11 +279,13 @@ groupedPostsToHTML groupedPosts =
     result
 
 writeArchiveByYearPage :: Array FormattedMarkdownData -> ExceptT Error Aff Unit
-writeArchiveByYearPage fds = do
-  contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds
-  templateContents <- ExceptT $ try $ readTextFile UTF8 $ archiveTemplate
-  replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
-  ExceptT $ try $ writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
+writeArchiveByYearPage fds =
+  ExceptT $ try
+    $ do
+        contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds
+        templateContents <- readTextFile UTF8 $ archiveTemplate
+        replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
+        writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
 
 dummyData :: Array FormattedMarkdownData
 dummyData =
