@@ -1,10 +1,8 @@
 module Utils where
 
 import Prelude
-import Control.Monad.Except (ExceptT(..))
 import Data.Either (Either(..))
-import Data.Maybe (Maybe)
-import Effect.Aff (Aff, Error, try)
+import Effect.Aff (Aff, error, throwError, try)
 import Node.FS.Aff (mkdir, readdir)
 
 templatesFolder :: String
@@ -23,7 +21,7 @@ newPostTemplate :: String
 newPostTemplate = templatesFolder <> "/post.md"
 
 tmpFolder :: String
-tmpFolder = "./tmp"
+tmpFolder = "./.vaak"
 
 archiveTemplate :: String
 archiveTemplate = templatesFolder <> "/archive.html"
@@ -31,14 +29,12 @@ archiveTemplate = templatesFolder <> "/archive.html"
 homepageTemplate :: String
 homepageTemplate = templatesFolder <> "/index.html"
 
-createFolderIfNotPresent :: String -> ExceptT Error Aff Unit
-createFolderIfNotPresent folderName =
-  ExceptT
-    $ do
-        res <- try $ readdir folderName
-        case res of
-          Right _ -> pure $ Right unit
-          Left _ -> try $ mkdir folderName
+createFolderIfNotPresent :: String -> Aff Unit
+createFolderIfNotPresent folderName = do
+  res <- try $ readdir folderName
+  case res of
+    Right _ -> pure $ unit
+    Left _ -> mkdir folderName
 
 foreign import formatDate :: String -> String -> String
 
