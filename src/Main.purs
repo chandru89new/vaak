@@ -53,7 +53,7 @@ main = do
               Left err -> do
                 log $ Logs.logError $ "Error when building the site: " <> show err
                 liftEffect $ exit 1
-              Right _ -> log $ Logs.logSuccess "Done."
+              Right _ -> log $ Logs.logSuccess "Site built and available in the `public` folder."
 
 buildSite :: ExceptT Error Aff Unit
 buildSite =
