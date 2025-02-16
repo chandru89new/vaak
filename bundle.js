@@ -9,7 +9,7 @@ esbuild
     format: "cjs",
     // target: "node16",
     banner: {
-      js: "(function() {"
+      js: "#!/usr/bin/env node\n(function() {"
     },
     footer: {
       js: "\nconst m = module.exports.main; m(); })();"

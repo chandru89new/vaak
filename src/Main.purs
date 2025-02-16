@@ -18,6 +18,7 @@ import Effect.Aff (Aff, Error, launchAff_, try)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Logs as Logs
+import Logs as Losg
 import Node.Buffer (Buffer)
 import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
@@ -37,11 +38,11 @@ main = do
       res <- runExceptT $ createNewPost slug
       case res of
         Left err -> do
-          log $ (Logs.red "Could not create a new post: ") <> show err
+          log $ Logs.logError ("Could not create a new post: " <> show err)
           exit 1
-        Right _ -> log $ "Created new post. Happy writing."
+        Right _ -> log $ Logs.logSuccess "Created new post. Happy writing!"
     Invalid -> do
-      log $ Logs.red "Invalid command." <> " Try `build` or `new {slug}`."
+      log $ Logs.logError $ "Invalid command." <> " Try `build` or `new {slug}`."
       exit 1
     Build ->
       launchAff_
@@ -50,51 +51,50 @@ main = do
             _ <- try $ liftEffect $ execSync ("rm -rf " <> tmpFolder) defaultExecSyncOptions
             case res of
               Left err -> do
-                log $ Logs.red "Error when building the site: " <> show err
+                log $ Logs.logError $ "Error when building the site: " <> show err
                 liftEffect $ exit 1
-              Right _ -> log $ Logs.green "Done."
+              Right _ -> log $ Logs.logSuccess "Done."
 
 buildSite :: ExceptT Error Aff Unit
 buildSite =
   ExceptT $ try
     $ do
-        log "\nStarting..."
+        log $ Logs.logInfo "Starting..."
         _ <- createFolderIfNotPresent tmpFolder
         { postsToPublish, postsToRebuild } <- getPostsAndSort
-        log "Generating posts pages..."
+        log $ Logs.logInfo "Generating posts pages..."
         _ <- generatePostsHTML postsToRebuild
-        log $ "Generating posts pages: " <> (Logs.green "Done!") <> "\n"
-        log "Generating archive page..."
-        -- _ <- createFullArchivePage postsToPublish
+        log $ Logs.logSuccess $ "Posts page generated."
+        log $ Logs.logInfo $ "Generating archive page..."
         _ <- writeArchiveByYearPage postsToPublish
-        log $ "Generating archive page: " <> (Logs.green "Done!") <> "\n"
-        log "Generating home page..."
+        log $ Logs.logSuccess $ "Archive page generated."
+        log $ Logs.logInfo $ "Generating home page..."
         _ <- createHomePage postsToPublish
-        log $ "Generating home page: " <> Logs.green "Done!" <> "\n"
-        log "Copying 404.html..."
+        log $ Logs.logSuccess $ "Home page generated."
+        log $ Logs.logInfo $ "Copying 404.html..."
         _ <- liftEffect $ execSync ("cp " <> templatesFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
-        log $ "Copying 404.html: " <> Logs.green "Done!" <> "\n"
-        log "Copying images folder..."
+        log $ Logs.logSuccess $ "404.html copied."
+        log $ Logs.logInfo "Copying images folder..."
         _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
-        log $ "Copying images folder: " <> Logs.green "Done!" <> "\n"
-        log "Copying js folder..."
+        log $ Logs.logSuccess $ "images folder copied."
+        log $ Logs.logInfo "Copying js folder..."
         _ <- liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
-        log $ "Copying js folder: " <> Logs.green "Done!" <> "\n"
-        log "Generating styles.css..."
-        log "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
+        log $ Logs.logSuccess "js folder copied."
+        log $ Logs.logInfo "Generating styles.css..."
+        log $ Logs.logInfo "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
         _ <- generateStyles
-        log $ "Generating styles.css: " <> Logs.green "Done!" <> "\n"
-        log "Generating RSS feed..."
+        log $ Logs.logSuccess "styles.css generated."
+        log $ Logs.logInfo "Generating RSS feed..."
         _ <- Rss.generateRSSFeed postsToPublish
-        log $ "Generating RSS feed: " <> Logs.green "Done!" <> "\n"
+        log $ Logs.logSuccess "RSS feed generated."
         _ <- cleanupNodeModules
-        log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder
+        log $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder
         _ <- createFolderIfNotPresent htmlOutputFolder
         _ <- liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> htmlOutputFolder) defaultExecSyncOptions
-        log $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder <> ": " <> Logs.green "Done!" <> "\n"
-        log "Updating cache..."
+        log $ Logs.logSuccess "Copied."
+        log $ Logs.logInfo "Updating cache..."
         _ <- Cache.writeCacheData
-        log $ "Updating cache: " <> Logs.green "Done!" <> "\n"
+        log $ Logs.logSuccess "Cached updated."
 
 newtype Template
   = Template String
@@ -126,8 +126,8 @@ writeHTMLFile :: Template -> FormattedMarkdownData -> Aff Unit
 writeHTMLFile template pd@{ frontMatter } = do
   res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> frontMatter.slug <> ".html") (replaceContentInTemplate template pd)
   _ <- case res of
-    Left err -> log $ Logs.red $ "Could not write " <> frontMatter.slug <> ".md to html (" <> show err <> ")"
-    Right _ -> log $ rawContentsFolder <> "/" <> frontMatter.slug <> ".md -> " <> tmpFolder <> "/" <> frontMatter.slug <> ".html" <> " = " <> (Logs.green $ "success!")
+    Left err -> log $ Logs.logError $ "Could not write " <> frontMatter.slug <> ".md to html (" <> show err <> ")"
+    Right _ -> log $ Logs.logSuccess $ "Wrote: " <> rawContentsFolder <> "/" <> frontMatter.slug <> ".md -> " <> tmpFolder <> "/" <> frontMatter.slug <> ".html"
   pure unit
 
 getFilesAndTemplate :: Aff { files :: Array String, template :: String }
