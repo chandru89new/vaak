@@ -15,9 +15,10 @@ const md2FormattedData = (string) => {
       ...r.data,
       date: formatDate("YYYY-MM-DD")(r.data.date),
       tags: r.data.tags?.split(",") ?? [],
+      status: r.data.status || "published"
     },
     content: md2FormattedDataService.render(r.content),
-    raw: string,
+    raw: string
   };
 };
 
@@ -40,5 +41,5 @@ export {
   formatDate,
   htmlToMarkdown,
   getEnv,
-  getCategoriesJson,
+  getCategoriesJson
 };

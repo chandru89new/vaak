@@ -18,7 +18,6 @@ import Effect.Aff (Aff, Error, launchAff_, try)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Logs as Logs
-import Logs as Losg
 import Node.Buffer (Buffer)
 import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
@@ -34,6 +33,7 @@ main = do
   args <- argv
   cmd <- pure $ mkCommand args
   case cmd of
+    ShowVersion -> log $ Logs.logInfo "v0.3.2"
     NewPost slug -> do
       res <- runExceptT $ createNewPost slug
       case res of
@@ -42,7 +42,8 @@ main = do
           exit 1
         Right _ -> log $ Logs.logSuccess "Created new post. Happy writing!"
     Invalid -> do
-      log $ Logs.logError $ "Invalid command." <> " Try `build` or `new {slug}`."
+      log $ Logs.logError $ "Invalid command."
+      log $ Logs.logInfo helpText
       exit 1
     Build ->
       launchAff_
@@ -54,6 +55,14 @@ main = do
                 log $ Logs.logError $ "Error when building the site: " <> show err
                 liftEffect $ exit 1
               Right _ -> log $ Logs.logSuccess "Site built and available in the `public` folder."
+
+helpText :: String
+helpText =
+  """Commands:
+  version - print version info.
+  build - build the site.
+  new [slug] - create a new post.
+"""
 
 buildSite :: ExceptT Error Aff Unit
 buildSite =
@@ -101,6 +110,7 @@ newtype Template
 
 data Command
   = Build
+  | ShowVersion
   | NewPost String
   | Invalid
 
@@ -108,9 +118,11 @@ instance showCommand :: Show Command where
   show Build = "Build"
   show (NewPost _) = "NewPost"
   show Invalid = "Invalid"
+  show ShowVersion = "ShowVersion"
 
 mkCommand :: Array String -> Command
 mkCommand xs = case head (drop 2 xs) of
+  Just "version" -> ShowVersion
   Just "build" -> Build
   Just "new" -> case head $ drop 3 xs of
     Just slug -> NewPost slug
@@ -233,9 +245,9 @@ getPostsAndSort = do
   oldCacheData <- Cache.readCacheData
   newCacheData <- Cache.createCacheData
   formattedDataArray <- filePathsToProcessedData onlyMarkdownFiles
-  removeIgnored <- pure $ filter (\f -> not f.frontMatter.ignore) formattedDataArray
-  removeCached <- pure $ filter (\f -> Cache.needsInvalidation oldCacheData newCacheData f.frontMatter.slug) removeIgnored
-  pure $ { postsToPublish: sortPosts removeIgnored, postsToRebuild: sortPosts removeCached }
+  removeDraft <- pure $ filter (\f -> not $ (f.frontMatter.status == "draft" || f.frontMatter.ignore)) formattedDataArray
+  removeCached <- pure $ filter (\f -> Cache.needsInvalidation oldCacheData newCacheData f.frontMatter.slug) removeDraft
+  pure $ { postsToPublish: sortPosts removeDraft, postsToRebuild: sortPosts removeCached }
   where
   filePathsToProcessedData :: Array String -> Aff (Array FormattedMarkdownData)
   filePathsToProcessedData fpaths = parTraverse (\f -> readFileToData $ rawContentsFolder <> "/" <> f) fpaths
@@ -292,11 +304,11 @@ writeArchiveByYearPage fds = do
 
 dummyData :: Array FormattedMarkdownData
 dummyData =
-  [ { frontMatter: { ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  , { frontMatter: { ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  , { frontMatter: { ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  , { frontMatter: { ignore: false, tags: [], date: "2022-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  , { frontMatter: { ignore: false, tags: [], date: "2022-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
+  [ { frontMatter: { status: "draft", ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
+  , { frontMatter: { status: "draft", ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
+  , { frontMatter: { status: "draft", ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
+  , { frontMatter: { status: "draft", ignore: false, tags: [], date: "2022-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
+  , { frontMatter: { status: "draft", ignore: false, tags: [], date: "2022-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
   ]
 
 createNewPost :: String -> ExceptT Error Effect Buffer
