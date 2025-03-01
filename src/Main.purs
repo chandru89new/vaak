@@ -1,6 +1,7 @@
 module Main where
 
 import Prelude
+
 import Cache as Cache
 import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Parallel (parTraverse, parTraverse_)
@@ -34,17 +35,20 @@ main = do
   args <- argv
   cmd <- pure $ mkCommand args
   case cmd of
-    ShowVersion -> log $ Logs.logInfo "v0.4.0"
-    NewPost slug -> do
-      res <- runExceptT $ createNewPost slug
-      case res of
-        Left err -> do
-          log $ Logs.logError ("Could not create a new post: " <> show err)
-          exit 1
-        Right _ -> log $ Logs.logSuccess "Created new post. Happy writing!"
+    Help -> log $ helpText
+    ShowVersion -> log $ "v0.4.1"
+    NewPost slug ->
+      launchAff_
+        $ do
+            res <- runExceptT $ createNewPost slug
+            case res of
+              Left err -> liftEffect $ do
+                log $ Logs.logError ("Could not create a new post: " <> show err)
+                exit 1
+              Right _ -> liftEffect $ log $ Logs.logSuccess "Created new post. Happy writing!"
     Invalid -> do
       log $ Logs.logError $ "Invalid command."
-      log $ Logs.logInfo helpText
+      log $ helpText
       exit 1
     Build ->
       launchAff_
@@ -60,6 +64,7 @@ main = do
 helpText :: String
 helpText =
   """Commands:
+  help - print this help text.
   version - print version info.
   build - build the site.
   new [slug] - create a new post.
@@ -106,17 +111,18 @@ buildSite =
         _ <- Cache.writeCacheData
         log $ Logs.logSuccess "Cached updated."
 
-newtype Template
-  = Template String
+newtype Template = Template String
 
 data Command
   = Build
   | ShowVersion
+  | Help
   | NewPost String
   | Invalid
 
 instance showCommand :: Show Command where
   show Build = "Build"
+  show Help = "Help"
   show (NewPost _) = "NewPost"
   show Invalid = "Invalid"
   show ShowVersion = "ShowVersion"
@@ -124,6 +130,7 @@ instance showCommand :: Show Command where
 mkCommand :: Array String -> Command
 mkCommand xs = case head (drop 2 xs) of
   Just "version" -> ShowVersion
+  Just "help" -> Help
   Just "build" -> Build
   Just "new" -> case head $ drop 3 xs of
     Just slug -> NewPost slug
@@ -172,20 +179,6 @@ replaceContentInTemplate (Template template) pd =
 readPostTemplate :: Aff String
 readPostTemplate = readTextFile UTF8 blogpostTemplate
 
--- createFullArchivePage :: Array FormattedMarkdownData -> Aff Unit
--- createFullArchivePage sortedArray = do
---   content <- (toHTML sortedArray)
---   writeFullArchivePage content
---   where
---   toHTML :: Array FormattedMarkdownData -> Aff String
---   toHTML fd = do
---     template <- ExceptT $ try $ readTextFile UTF8 archiveTemplate
---     pure $ replaceAll (Pattern "{{content}}") (Replacement $ "<ul>" <> content <> "</ul>") template
---     where
---     content = foldl fn "" fd
---     fn b a = b <> "<li><a href=\"./" <> a.frontMatter.slug <> "\">" <> a.frontMatter.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.frontMatter.date <> "</span>" <> "</li>"
---   writeFullArchivePage :: String -> Aff Unit
---   writeFullArchivePage str = ExceptT $ try $ writeTextFile UTF8 (tmpFolder <> "/archive.html") str
 generateStyles :: Aff Buffer
 generateStyles =
   liftEffect
@@ -223,7 +216,7 @@ createHomePage sortedArrayofPosts = do
   contents <-
     pure
       $ replaceAll (Pattern "{{recent_posts}}") (Replacement recentsString) template
-      # replaceAll (Pattern "{{posts_by_categories}}") (Replacement categories)
+          # replaceAll (Pattern "{{posts_by_categories}}") (Replacement categories)
   writeTextFile UTF8 (tmpFolder <> "/index.html") contents
   where
   convertCategoriesToString :: Array U.Category -> String
@@ -310,17 +303,16 @@ writeArchiveByYearPage fds = do
   replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
   writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
 
-createNewPost :: String -> ExceptT Error Effect Unit
+createNewPost :: String -> ExceptT Error Aff Unit
 createNewPost slug =
   ExceptT $ try
-    $ launchAff_
     $ do
         newPostTemplateContents <- readTextFile UTF8 newPostTemplate
         today <- pure $ formatDate "YYYY-MM-DD" ""
         replaced <-
           pure
             $ replaceAll (Pattern "$date") (Replacement today) newPostTemplateContents
-            # replaceAll (Pattern "$slug") (Replacement slug)
+                # replaceAll (Pattern "$slug") (Replacement slug)
         writeTextFile UTF8 (rawContentsFolder <> "/" <> slug <> ".md") replaced
 
 cleanupNodeModules :: Aff Buffer

@@ -1636,10 +1636,10 @@ purescript@0.15.9:
   dependencies:
     purescript-installer "^0.3.5"
 
-purty@^7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/purty/-/purty-7.0.0.tgz#3a714a2155f543118c6831e1fb41b84d17de2b59"
-  integrity sha512-gHHghPEjRY39GUJ8KnOMRfPArJILGCXwEhX6BmEdNiLgZuCjLLBLyawGiKFjYMfy8H5Dsk5NbgwIGslrPrernA==
+purs-tidy@^0.11.0:
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/purs-tidy/-/purs-tidy-0.11.0.tgz#f5d157930a404678891b5cd1787b6f1a140ed2b3"
+  integrity sha512-HZ8AS6J7Ka2YVl6Gr/H5NV17TU10yGYUTxVwRd5tKuwsVdFZewXSzZ/HTpWrkhdR2gxSVk0BdnpJhyu//oRc+w==
 
 queue-microtask@^1.2.2:
   version "1.2.3"

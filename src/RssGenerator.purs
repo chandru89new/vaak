@@ -35,7 +35,8 @@ generateFeedItemString template = foldl fn ""
   where
   fn b fd =
     b
-      <> ( replaceAll (Pattern "{{title}}") (Replacement $ formatTitle fd.frontMatter.title) template
+      <>
+        ( replaceAll (Pattern "{{title}}") (Replacement $ formatTitle fd.frontMatter.title) template
             # replaceAll (Pattern "{{post_url}}") (Replacement ("https://notes.druchan.com/" <> fd.frontMatter.slug))
             # replaceAll (Pattern "{{content}}") (Replacement fd.content)
             # replaceAll (Pattern "{{published_date}}") (Replacement $ Utils.formatDate rssDateFormat fd.frontMatter.date)

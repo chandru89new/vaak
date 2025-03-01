@@ -57,10 +57,10 @@ getCacheValue cacheData slug =
   ( split (Pattern "\n")
       >>> map (\line -> split (Pattern "::") line)
       >>> find
-          ( \splitLine -> case splitLine !! 0 of
-              Nothing -> false
-              Just s -> s == slug
-          )
+        ( \splitLine -> case splitLine !! 0 of
+            Nothing -> false
+            Just s -> s == slug
+        )
       >>> map (\found -> fromMaybe "" $ found !! 1)
   )
     cacheData

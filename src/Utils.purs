@@ -39,28 +39,28 @@ createFolderIfNotPresent folderName = do
 
 foreign import formatDate :: String -> String -> String
 
-type RawFormattedMarkdownData
-  = { frontMatter ::
-        { title :: String
-        , date :: String
-        , slug :: String
-        , tags :: Array String
-        , status :: String
-        }
-    , content :: String
-    , raw :: String
-    }
+type RawFormattedMarkdownData =
+  { frontMatter ::
+      { title :: String
+      , date :: String
+      , slug :: String
+      , tags :: Array String
+      , status :: String
+      }
+  , content :: String
+  , raw :: String
+  }
 
-type FormattedMarkdownData
-  = { frontMatter :: { title :: String, date :: String, slug :: String, tags :: Array String, status :: Status }
-    , content :: String
-    , raw :: String
-    }
+type FormattedMarkdownData =
+  { frontMatter :: { title :: String, date :: String, slug :: String, tags :: Array String, status :: Status }
+  , content :: String
+  , raw :: String
+  }
 
-type Category
-  = { category :: String
-    , posts :: Array String
-    }
+type Category =
+  { category :: String
+  , posts :: Array String
+  }
 
 foreign import md2RawFormattedData :: String -> RawFormattedMarkdownData
 
