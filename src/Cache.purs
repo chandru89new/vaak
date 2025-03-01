@@ -1,6 +1,7 @@
 module Cache where
 
 import Prelude
+
 import Control.Parallel (parTraverse)
 import Data.Array (filter, find, (!!))
 import Data.Either (Either(..), either, hush)
@@ -8,13 +9,12 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), Replacement(..), contains, joinWith, replace, split)
 import Effect.Aff (Aff, try)
 import Effect.Class (liftEffect)
--- import Effect.Class.Console (log)
 import Node.Buffer (toString)
 import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
-import Utils (rawContentsFolder)
-import Utils as U
+import Node.Path (FilePath)
+import Utils (askConfig)
 
 -- createNewCacheLookup :: Array U.FormattedMarkdownData -> Aff Unit
 -- createNewCacheLookup fds = do
@@ -23,9 +23,9 @@ import Utils as U
 --   where
 --   -- slugs = map (\fd -> fd.frontMatter.slug) fds
 --   slugs = [ "trust-systems", "use-interval-hook" ]
-getStat :: String -> Aff ({ slug :: String, stat :: String })
-getStat slug = do
-  buf <- try $ liftEffect $ execSync ("stat -f \"%Sm %Sc\" -n " <> U.rawContentsFolder <> "/" <> slug <> ".md") defaultExecSyncOptions
+getStat :: FilePath -> String -> Aff ({ slug :: String, stat :: String })
+getStat contentsFolder slug = do
+  buf <- try $ liftEffect $ execSync ("stat -f \"%Sm %Sc\" -n " <> contentsFolder <> "/" <> slug <> ".md") defaultExecSyncOptions
   case buf of
     Left _ -> pure $ { slug, stat: "" }
     Right buffer -> do
@@ -35,7 +35,9 @@ getStat slug = do
         Left _ -> pure { slug, stat: "" }
 
 getStatAll :: Array String -> Aff (Array { slug :: String, stat :: String })
-getStatAll slugs = parTraverse getStat slugs
+getStatAll slugs = do
+  config <- askConfig
+  parTraverse (getStat config.contentFolder) slugs
 
 writeCacheData :: Aff Unit
 writeCacheData = do
@@ -45,7 +47,8 @@ writeCacheData = do
 
 createCacheData :: Aff String
 createCacheData = do
-  contents <- try $ readdir rawContentsFolder
+  config <- askConfig
+  contents <- try $ readdir config.contentFolder
   unwrapped <- pure $ either (\_ -> []) (filter (contains (Pattern ".md")) >>> (map $ replace (Pattern ".md") (Replacement ""))) contents
   stats <- getStatAll unwrapped
   pure $ joinWith "\n" (map toString' stats)
