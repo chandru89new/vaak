@@ -34,7 +34,7 @@ main = do
   args <- argv
   cmd <- pure $ mkCommand args
   case cmd of
-    ShowVersion -> log $ Logs.logInfo "v0.3.2"
+    ShowVersion -> log $ Logs.logInfo "v0.4.0"
     NewPost slug -> do
       res <- runExceptT $ createNewPost slug
       case res of
