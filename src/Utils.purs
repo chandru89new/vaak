@@ -1,36 +1,42 @@
 module Utils where
 
 import Prelude
+
 import Data.Either (Either(..))
+import Data.Int (fromString)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (toLower)
 import Effect.Aff (Aff, try)
+import Effect.Class (liftEffect)
 import Node.FS.Aff (mkdir, readdir)
+import Node.Path (FilePath)
+import Node.Process (lookupEnv)
 
-templatesFolder :: String
-templatesFolder = "./templates"
+defaultTemplateFolder :: String
+defaultTemplateFolder = "./template"
 
-htmlOutputFolder :: String
-htmlOutputFolder = "./public"
+defaultOutputFolder :: String
+defaultOutputFolder = "./public"
 
-rawContentsFolder :: String
-rawContentsFolder = "./contents"
+defaultContentFolder :: String
+defaultContentFolder = "./posts"
 
-blogpostTemplate :: String
-blogpostTemplate = templatesFolder <> "/post.html"
+defaultBlogpostTemplate :: FilePath -> String
+defaultBlogpostTemplate templateFolder = templateFolder <> "/post.html"
 
-newPostTemplate :: String
-newPostTemplate = templatesFolder <> "/post.md"
+newPostTemplate :: FilePath -> String
+newPostTemplate templateFolder = templateFolder <> "/post.md"
 
 tmpFolder :: String
 tmpFolder = "./.vaak"
 
-archiveTemplate :: String
-archiveTemplate = templatesFolder <> "/archive.html"
+archiveTemplate :: FilePath -> String
+archiveTemplate templateFolder = templateFolder <> "/archive.html"
 
-homepageTemplate :: String
-homepageTemplate = templatesFolder <> "/index.html"
+homepageTemplate :: FilePath -> String
+homepageTemplate templateFolder = templateFolder <> "/index.html"
 
-createFolderIfNotPresent :: String -> Aff Unit
+createFolderIfNotPresent :: FilePath -> Aff Unit
 createFolderIfNotPresent folderName = do
   res <- try $ readdir folderName
   case res of
@@ -73,11 +79,7 @@ md2FormattedData s =
   in
     { frontMatter: { title: r.frontMatter.title, date: r.frontMatter.date, slug: r.frontMatter.slug, tags: r.frontMatter.tags, status: status }, content: r.content, raw: r.raw }
 
-foreign import htmlToMarkdown :: String -> String
-
-foreign import getEnv :: String -> String
-
-foreign import getCategoriesJson :: Unit -> Array Category
+foreign import getCategoriesJson :: String -> Array Category
 
 data Status
   = Draft
@@ -99,3 +101,20 @@ stringToStatus s = case toLower s of
   "draft" -> Draft
   "published" -> Published
   _ -> InvalidStatus
+
+type Config = { templateFolder :: String, outputFolder :: String, contentFolder :: String, newPostTemplate :: String, totalRecentPosts :: Int }
+
+askConfig :: Aff Config
+askConfig = liftEffect $ do
+  _templateFolder <- lookupEnv "TEMPLATE_DIR"
+  _outputFolder <- lookupEnv "OUTPUT_DIR"
+  _contentFolder <- lookupEnv "POSTS_DIR"
+  _totalRecentPosts <- do
+    rp <- lookupEnv "RECENT_POSTS"
+    pure $ case rp of
+      Just str -> fromString str
+      Nothing -> Nothing
+  pure $ { templateFolder: fromMaybe defaultTemplateFolder _templateFolder, outputFolder: fromMaybe defaultOutputFolder _outputFolder, contentFolder: fromMaybe defaultContentFolder _contentFolder, newPostTemplate: defaultBlogpostTemplate (fromMaybe defaultTemplateFolder _templateFolder), totalRecentPosts: fromMaybe defaultTotalRecentPosts _totalRecentPosts }
+
+defaultTotalRecentPosts :: Int
+defaultTotalRecentPosts = 5

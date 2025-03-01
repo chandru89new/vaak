@@ -1,7 +1,6 @@
 import matter from "gray-matter";
 import dayjs from "dayjs";
 import MarkdownIt from "markdown-it";
-import TurndownService from "turndown";
 import yaml from "js-yaml";
 import fs from "fs";
 
@@ -23,24 +22,12 @@ const md2RawFormattedData = (string) => {
   };
 };
 
-const turndownService = new TurndownService();
-
-const htmlToMarkdown = (htmlContent) => turndownService.turndown(htmlContent);
-
-const getEnv = (key) => process.env[key] || "";
-
-const getCategoriesJson = () => {
+const getCategoriesJson = (postsDir) => {
   try {
-    return yaml.load(fs.readFileSync("./contents/categories.yml"), "utf-8");
+    return yaml.load(fs.readFileSync(`./${postsDir}/categories.yml`), "utf-8");
   } catch {
     return [];
   }
 };
 
-export {
-  md2RawFormattedData,
-  formatDate,
-  htmlToMarkdown,
-  getEnv,
-  getCategoriesJson
-};
+export { md2RawFormattedData, formatDate, getCategoriesJson };

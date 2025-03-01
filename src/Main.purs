@@ -24,10 +24,11 @@ import Node.Buffer (Buffer)
 import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
+import Node.Path (FilePath)
 import Node.Process (argv, exit)
 import Prelude as Maybe
 import RssGenerator as Rss
-import Utils (FormattedMarkdownData, Status(..), archiveTemplate, blogpostTemplate, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, htmlOutputFolder, md2FormattedData, md2RawFormattedData, newPostTemplate, rawContentsFolder, templatesFolder, tmpFolder)
+import Utils (Config, FormattedMarkdownData, Status(..), archiveTemplate, askConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, md2FormattedData, md2RawFormattedData, newPostTemplate, tmpFolder)
 import Utils as U
 
 main :: Effect Unit
@@ -36,11 +37,12 @@ main = do
   cmd <- pure $ mkCommand args
   case cmd of
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.4.1"
+    ShowVersion -> log $ "v0.5.0"
     NewPost slug ->
       launchAff_
         $ do
-            res <- runExceptT $ createNewPost slug
+            config <- askConfig
+            res <- runExceptT $ createNewPost config slug
             case res of
               Left err -> liftEffect $ do
                 log $ Logs.logError ("Could not create a new post: " <> show err)
@@ -53,13 +55,14 @@ main = do
     Build ->
       launchAff_
         $ do
-            res <- runExceptT buildSite
+            config <- askConfig
+            res <- runExceptT $ buildSite config
             _ <- try $ liftEffect $ execSync ("rm -rf " <> tmpFolder) defaultExecSyncOptions
             case res of
               Left err -> do
                 log $ Logs.logError $ "Error when building the site: " <> show err
                 liftEffect $ exit 1
-              Right _ -> log $ Logs.logSuccess "Site built and available in the `public` folder."
+              Right _ -> log $ Logs.logSuccess "Site built and available in the " <> config.outputFolder <> " folder."
 
 helpText :: String
 helpText =
@@ -70,13 +73,13 @@ helpText =
   new [slug] - create a new post.
 """
 
-buildSite :: ExceptT Error Aff Unit
-buildSite =
+buildSite :: Config -> ExceptT Error Aff Unit
+buildSite config =
   ExceptT $ try
     $ do
         log $ Logs.logInfo "Starting..."
         _ <- createFolderIfNotPresent tmpFolder
-        { postsToPublish, postsToRebuild } <- getPostsAndSort
+        { postsToPublish, postsToRebuild } <- getPostsAndSort config.contentFolder
         log $ Logs.logInfo "Generating posts pages..."
         _ <- generatePostsHTML postsToRebuild
         log $ Logs.logSuccess $ "Posts page generated."
@@ -87,7 +90,7 @@ buildSite =
         _ <- createHomePage postsToPublish
         log $ Logs.logSuccess $ "Home page generated."
         log $ Logs.logInfo $ "Copying 404.html..."
-        _ <- liftEffect $ execSync ("cp " <> templatesFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
+        _ <- liftEffect $ execSync ("cp " <> config.templateFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
         log $ Logs.logSuccess $ "404.html copied."
         log $ Logs.logInfo "Copying images folder..."
         _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
@@ -103,9 +106,9 @@ buildSite =
         _ <- Rss.generateRSSFeed postsToPublish
         log $ Logs.logSuccess "RSS feed generated."
         _ <- cleanupNodeModules
-        log $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> htmlOutputFolder
-        _ <- createFolderIfNotPresent htmlOutputFolder
-        _ <- liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> htmlOutputFolder) defaultExecSyncOptions
+        log $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
+        _ <- createFolderIfNotPresent config.outputFolder
+        _ <- liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder) defaultExecSyncOptions
         log $ Logs.logSuccess "Copied."
         log $ Logs.logInfo "Updating cache..."
         _ <- Cache.writeCacheData
@@ -151,15 +154,17 @@ readFileToData filePath = do
 
 writeHTMLFile :: Template -> FormattedMarkdownData -> Aff Unit
 writeHTMLFile template pd@{ frontMatter } = do
+  config <- askConfig
   res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> frontMatter.slug <> ".html") (replaceContentInTemplate template pd)
   _ <- case res of
     Left err -> log $ Logs.logError $ "Could not write " <> frontMatter.slug <> ".md to html (" <> show err <> ")"
-    Right _ -> log $ Logs.logSuccess $ "Wrote: " <> rawContentsFolder <> "/" <> frontMatter.slug <> ".md -> " <> tmpFolder <> "/" <> frontMatter.slug <> ".html"
+    Right _ -> log $ Logs.logSuccess $ "Wrote: " <> config.contentFolder <> "/" <> frontMatter.slug <> ".md -> " <> tmpFolder <> "/" <> frontMatter.slug <> ".html"
   pure unit
 
 getFilesAndTemplate :: Aff { files :: Array String, template :: String }
 getFilesAndTemplate = do
-  files <- readdir rawContentsFolder
+  config <- askConfig
+  files <- readdir config.contentFolder
   template <- readPostTemplate
   pure { files, template }
 
@@ -177,19 +182,22 @@ replaceContentInTemplate (Template template) pd =
     # replaceAll (Pattern "{{page_title}}") (Replacement pd.frontMatter.title)
 
 readPostTemplate :: Aff String
-readPostTemplate = readTextFile UTF8 blogpostTemplate
+readPostTemplate = do
+  config <- askConfig
+  readTextFile UTF8 config.newPostTemplate
 
 generateStyles :: Aff Buffer
-generateStyles =
+generateStyles = do
+  config <- askConfig
   liftEffect
     $ do
-        _ <- execSync copyStyleFileToTmp defaultExecSyncOptions
+        _ <- execSync (copyStyleFileToTmp config) defaultExecSyncOptions
         _ <- execSync installTailwindDeps options
         execSync command options
   where
   options = defaultExecSyncOptions { cwd = Just tmpFolder }
 
-  copyStyleFileToTmp = "cp " <> templatesFolder <> "/style.css " <> tmpFolder <> "/style.css"
+  copyStyleFileToTmp config = "cp " <> config.templateFolder <> "/style.css " <> tmpFolder <> "/style.css"
 
   installTailwindDeps = "npm install tailwindcss"
 
@@ -210,9 +218,10 @@ recentPosts n xs =
 
 createHomePage :: Array FormattedMarkdownData -> Aff Unit
 createHomePage sortedArrayofPosts = do
-  recentsString <- pure $ recentPosts 3 sortedArrayofPosts
-  template <- readTextFile UTF8 homepageTemplate
-  categories <- pure $ (getCategoriesJson unit # convertCategoriesToString)
+  config <- askConfig
+  recentsString <- pure $ recentPosts config.totalRecentPosts sortedArrayofPosts
+  template <- readTextFile UTF8 (homepageTemplate config.templateFolder)
+  categories <- pure $ (getCategoriesJson config.contentFolder # convertCategoriesToString)
   contents <-
     pure
       $ replaceAll (Pattern "{{recent_posts}}") (Replacement recentsString) template
@@ -239,19 +248,20 @@ createHomePage sortedArrayofPosts = do
 
   fn2 b a = b <> "<li><a href=\"./" <> a.frontMatter.slug <> "\">" <> a.frontMatter.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.frontMatter.date <> "</span></li>"
 
-getPostsAndSort :: Aff ({ postsToPublish :: Array FormattedMarkdownData, postsToRebuild :: Array FormattedMarkdownData })
-getPostsAndSort = do
-  filePaths <- readdir rawContentsFolder
+getPostsAndSort :: FilePath -> Aff ({ postsToPublish :: Array FormattedMarkdownData, postsToRebuild :: Array FormattedMarkdownData })
+getPostsAndSort folder = do
+  config <- askConfig
+  filePaths <- readdir folder
   onlyMarkdownFiles <- pure $ filter (contains (Pattern ".md")) filePaths
   oldCacheData <- Cache.readCacheData
   newCacheData <- Cache.createCacheData
-  formattedDataArray <- filePathsToProcessedData onlyMarkdownFiles
+  formattedDataArray <- filePathsToProcessedData config onlyMarkdownFiles
   removeDraft <- pure $ filter (\f -> f.frontMatter.status /= Draft) formattedDataArray
   removeCached <- pure $ filter (\f -> Cache.needsInvalidation oldCacheData newCacheData f.frontMatter.slug) removeDraft
   pure $ { postsToPublish: sortPosts removeDraft, postsToRebuild: sortPosts removeCached }
   where
-  filePathsToProcessedData :: Array String -> Aff (Array FormattedMarkdownData)
-  filePathsToProcessedData fpaths = parTraverse (\f -> readFileToData $ rawContentsFolder <> "/" <> f) fpaths
+  filePathsToProcessedData :: Config -> Array String -> Aff (Array FormattedMarkdownData)
+  filePathsToProcessedData config fpaths = parTraverse (\f -> readFileToData $ config.contentFolder <> "/" <> f) fpaths
 
 sortPosts :: Array FormattedMarkdownData -> Array FormattedMarkdownData
 sortPosts = sortBy (\a b -> if a.frontMatter.date < b.frontMatter.date then GT else LT)
@@ -298,22 +308,23 @@ groupedPostsToHTML groupedPosts =
 
 writeArchiveByYearPage :: Array FormattedMarkdownData -> Aff Unit
 writeArchiveByYearPage fds = do
+  config <- askConfig
   contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds
-  templateContents <- readTextFile UTF8 $ archiveTemplate
+  templateContents <- readTextFile UTF8 $ archiveTemplate config.templateFolder
   replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
   writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
 
-createNewPost :: String -> ExceptT Error Aff Unit
-createNewPost slug =
+createNewPost :: Config -> String -> ExceptT Error Aff Unit
+createNewPost config slug =
   ExceptT $ try
     $ do
-        newPostTemplateContents <- readTextFile UTF8 newPostTemplate
+        newPostTemplateContents <- readTextFile UTF8 (newPostTemplate config.templateFolder)
         today <- pure $ formatDate "YYYY-MM-DD" ""
         replaced <-
           pure
             $ replaceAll (Pattern "$date") (Replacement today) newPostTemplateContents
                 # replaceAll (Pattern "$slug") (Replacement slug)
-        writeTextFile UTF8 (rawContentsFolder <> "/" <> slug <> ".md") replaced
+        writeTextFile UTF8 (config.contentFolder <> "/" <> slug <> ".md") replaced
 
 cleanupNodeModules :: Aff Buffer
 cleanupNodeModules = liftEffect $ execSync "rm -rf node_modules package-lock.json package.json" options
