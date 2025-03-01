@@ -5,10 +5,11 @@ import TurndownService from "turndown";
 import yaml from "js-yaml";
 import fs from "fs";
 
-const formatDate = (format) => (dateString) => dayjs(dateString).format(format);
+const formatDate = (format) => (dateString) =>
+  !!dateString ? dayjs(dateString).format(format) : dayjs().format(format);
 
 const md2FormattedDataService = new MarkdownIt({ html: true });
-const md2FormattedData = (string) => {
+const md2RawFormattedData = (string) => {
   const r = matter(string);
   return {
     frontMatter: {
@@ -37,7 +38,7 @@ const getCategoriesJson = () => {
 };
 
 export {
-  md2FormattedData,
+  md2RawFormattedData,
   formatDate,
   htmlToMarkdown,
   getEnv,

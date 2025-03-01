@@ -14,9 +14,10 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), Replacement(..), contains, joinWith, replaceAll, split)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff (Aff, Error, launchAff_, try)
+import Effect.Aff (Aff, Error, launchAff_, try, throwError)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
+import Effect.Exception (error)
 import Logs as Logs
 import Node.Buffer (Buffer)
 import Node.ChildProcess (defaultExecSyncOptions, execSync)
@@ -25,7 +26,7 @@ import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Process (argv, exit)
 import Prelude as Maybe
 import RssGenerator as Rss
-import Utils (FormattedMarkdownData, archiveTemplate, blogpostTemplate, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, htmlOutputFolder, md2FormattedData, newPostTemplate, rawContentsFolder, templatesFolder, tmpFolder)
+import Utils (FormattedMarkdownData, Status(..), archiveTemplate, blogpostTemplate, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, htmlOutputFolder, md2FormattedData, md2RawFormattedData, newPostTemplate, rawContentsFolder, templatesFolder, tmpFolder)
 import Utils as U
 
 main :: Effect Unit
@@ -132,7 +133,14 @@ mkCommand xs = case head (drop 2 xs) of
 readFileToData :: String -> Aff FormattedMarkdownData
 readFileToData filePath = do
   contents <- readTextFile UTF8 filePath
-  pure $ md2FormattedData contents
+  let
+    fd = md2FormattedData contents
+
+    fdraw = md2RawFormattedData contents
+  if fd.frontMatter.status == InvalidStatus then
+    throwError $ error $ "Invalid status in " <> filePath <> "." <> "Found -> status: " <> fdraw.frontMatter.status
+  else
+    pure fd
 
 writeHTMLFile :: Template -> FormattedMarkdownData -> Aff Unit
 writeHTMLFile template pd@{ frontMatter } = do
@@ -245,7 +253,7 @@ getPostsAndSort = do
   oldCacheData <- Cache.readCacheData
   newCacheData <- Cache.createCacheData
   formattedDataArray <- filePathsToProcessedData onlyMarkdownFiles
-  removeDraft <- pure $ filter (\f -> not $ (f.frontMatter.status == "draft" || f.frontMatter.ignore)) formattedDataArray
+  removeDraft <- pure $ filter (\f -> f.frontMatter.status /= Draft) formattedDataArray
   removeCached <- pure $ filter (\f -> Cache.needsInvalidation oldCacheData newCacheData f.frontMatter.slug) removeDraft
   pure $ { postsToPublish: sortPosts removeDraft, postsToRebuild: sortPosts removeCached }
   where
@@ -302,17 +310,18 @@ writeArchiveByYearPage fds = do
   replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
   writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
 
-dummyData :: Array FormattedMarkdownData
-dummyData =
-  [ { frontMatter: { status: "draft", ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  , { frontMatter: { status: "draft", ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  , { frontMatter: { status: "draft", ignore: false, tags: [], date: "2023-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  , { frontMatter: { status: "draft", ignore: false, tags: [], date: "2022-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  , { frontMatter: { status: "draft", ignore: false, tags: [], date: "2022-01-01", slug: "something", title: "something" }, content: "more", raw: "fasdf" }
-  ]
-
-createNewPost :: String -> ExceptT Error Effect Buffer
-createNewPost slug = ExceptT $ try $ execSync ("cp " <> newPostTemplate <> " " <> rawContentsFolder <> "/" <> slug <> ".md") defaultExecSyncOptions
+createNewPost :: String -> ExceptT Error Effect Unit
+createNewPost slug =
+  ExceptT $ try
+    $ launchAff_
+    $ do
+        newPostTemplateContents <- readTextFile UTF8 newPostTemplate
+        today <- pure $ formatDate "YYYY-MM-DD" ""
+        replaced <-
+          pure
+            $ replaceAll (Pattern "$date") (Replacement today) newPostTemplateContents
+            # replaceAll (Pattern "$slug") (Replacement slug)
+        writeTextFile UTF8 (rawContentsFolder <> "/" <> slug <> ".md") replaced
 
 cleanupNodeModules :: Aff Buffer
 cleanupNodeModules = liftEffect $ execSync "rm -rf node_modules package-lock.json package.json" options

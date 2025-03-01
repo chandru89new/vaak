@@ -22,7 +22,7 @@
     "watch": [
       "src"
     ],
-    "ext": "purs",
+    "ext": "purs js",
     "ignore": [
       "node_modules"
     ],

@@ -17,18 +17,19 @@ to generate this file without the comments in this block.
   , "console"
   , "effect"
   , "either"
+  , "exceptions"
   , "integers"
   , "maybe"
   , "node-buffer"
   , "node-child-process"
   , "node-fs-aff"
+  , "node-process"
   , "ordered-collections"
   , "parallel"
   , "prelude"
   , "strings"
   , "transformers"
   , "tuples"
-  , "node-process"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
