@@ -9,7 +9,7 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class.Console (log)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, writeTextFile)
-import Utils (FormattedMarkdownData, templatesFolder)
+import Utils (FormattedMarkdownData, askConfig)
 import Utils as Utils
 
 feedItemTemplate ∷ String
@@ -24,7 +24,8 @@ feedItemTemplate =
 
 generateRSSFeed :: Array FormattedMarkdownData -> Aff Unit
 generateRSSFeed fds = do
-  templateContents <- readTextFile UTF8 (templatesFolder <> "/feed.xml")
+  config <- askConfig
+  templateContents <- readTextFile UTF8 (config.templateFolder <> "/feed.xml")
   feedItemsString <- pure $ generateFeedItemString feedItemTemplate fds
   lastUpdated <- pure $ getLastUpdated (head fds)
   updatedFeedContents <- pure $ replaceFeedContents feedItemsString lastUpdated templateContents
