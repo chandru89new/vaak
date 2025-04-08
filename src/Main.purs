@@ -197,11 +197,11 @@ generateStyles = do
   where
   options = defaultExecSyncOptions { cwd = Just tmpFolder }
 
-  copyStyleFileToTmp config = "cp " <> config.templateFolder <> "/style.css " <> tmpFolder <> "/style.css"
+  copyStyleFileToTmp config = "cp " <> config.templateFolder <> "/style.css " <> tmpFolder <> "/style1.css"
 
   installTailwindDeps = "npm install tailwindcss"
 
-  command = "npx @tailwindcss/cli -i style.css -o style.css"
+  command = "npx @tailwindcss/cli -i style1.css -o style.css && rm style1.css"
 
 recentPosts :: Int -> Array FormattedMarkdownData -> String
 recentPosts n xs =

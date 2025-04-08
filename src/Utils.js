@@ -24,7 +24,7 @@ const md2RawFormattedData = (string) => {
 
 const getCategoriesJson = (postsDir) => {
   try {
-    return yaml.load(fs.readFileSync(`./${postsDir}/categories.yml`), "utf-8");
+    return yaml.load(fs.readFileSync(`./${postsDir}/categories.yml`, 'utf-8'));
   } catch {
     return [];
   }
