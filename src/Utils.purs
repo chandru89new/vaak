@@ -111,9 +111,7 @@ askConfig = liftEffect $ do
   _contentFolder <- lookupEnv "POSTS_DIR"
   _totalRecentPosts <- do
     rp <- lookupEnv "RECENT_POSTS"
-    pure $ case rp of
-      Just str -> fromString str
-      Nothing -> Nothing
+    pure $ rp >>= fromString
   pure $ { templateFolder: fromMaybe defaultTemplateFolder _templateFolder, outputFolder: fromMaybe defaultOutputFolder _outputFolder, contentFolder: fromMaybe defaultContentFolder _contentFolder, newPostTemplate: defaultBlogpostTemplate (fromMaybe defaultTemplateFolder _templateFolder), totalRecentPosts: fromMaybe defaultTotalRecentPosts _totalRecentPosts }
 
 defaultTotalRecentPosts :: Int
