@@ -102,7 +102,6 @@ buildSite config =
         Logs.logInfo "Generating RSS feed..."
         _ <- Rss.generateRSSFeed (take 10 postsMetadata)
         Logs.logSuccess "RSS feed generated."
-        _ <- cleanupNodeModules
         Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
         _ <- createFolderIfNotPresent config.outputFolder
         _ <- liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder) defaultExecSyncOptions
@@ -317,8 +316,3 @@ createNewPost config slug =
             $ replaceAll (Pattern "$date") (Replacement today) newPostTemplateContents
                 # replaceAll (Pattern "$slug") (Replacement slug)
         writeTextFile UTF8 (config.contentFolder <> "/" <> slug <> ".md") replaced
-
-cleanupNodeModules :: Aff Buffer
-cleanupNodeModules = liftEffect $ execSync "rm -rf node_modules package-lock.json package.json" options
-  where
-  options = defaultExecSyncOptions { cwd = Just tmpFolder }
