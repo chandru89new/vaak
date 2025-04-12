@@ -37,7 +37,7 @@ main = do
   cmd <- pure $ mkCommand args
   case cmd of
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.6.0"
+    ShowVersion -> log $ "v0.7.0"
     NewPost slug ->
       launchAff_
         $ do
@@ -97,7 +97,6 @@ buildSite config =
         _ <- liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
         Logs.logSuccess "js folder copied."
         Logs.logInfo "Generating styles.css..."
-        Logs.logInfo "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
         _ <- generateStyles
         Logs.logSuccess "styles.css generated."
         Logs.logInfo "Generating RSS feed..."
@@ -190,16 +189,11 @@ generateStyles = do
   liftEffect
     $ do
         _ <- execSync (copyStyleFileToTmp config) defaultExecSyncOptions
-        _ <- execSync installTailwindDeps options
         execSync command options
   where
   options = defaultExecSyncOptions { cwd = Just tmpFolder }
-
   copyStyleFileToTmp config = "cp " <> config.templateFolder <> "/style.css " <> tmpFolder <> "/style1.css"
-
-  installTailwindDeps = "npm install tailwindcss"
-
-  command = "npx @tailwindcss/cli -i style1.css -o style.css && rm style1.css"
+  command = "tailwindcss -i style1.css -o style.css --minify && rm style1.css"
 
 recentPosts :: Int -> Array FrontMatterS -> String
 recentPosts n xs =
