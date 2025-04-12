@@ -2,7 +2,7 @@ module Main where
 
 import Prelude
 
-import Cache (CacheData, needsInvalidation', readCacheData)
+import Cache (CacheData, needsInvalidation, readCacheData)
 import Cache as Cache
 import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Parallel (parTraverse)
@@ -158,7 +158,7 @@ generatePostHTML :: Template -> CacheData -> String -> Aff (FrontMatterS)
 generatePostHTML template cache fileName = do
   config <- askConfig
   fd <- md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fileName)
-  needsBuilding <- needsInvalidation' cache fileName
+  needsBuilding <- needsInvalidation cache fileName
   when needsBuilding $ do
     case fd.frontMatter.status of
       Draft -> pure unit

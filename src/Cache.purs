@@ -70,8 +70,8 @@ readCacheData = do
 
 type CacheData = Map String String
 
-needsInvalidation' :: CacheData -> String -> Aff Boolean
-needsInvalidation' cacheData filename = do
+needsInvalidation :: CacheData -> String -> Aff Boolean
+needsInvalidation cacheData filename = do
   case lookup filename cacheData of
     Nothing -> pure true
     Just x -> do
