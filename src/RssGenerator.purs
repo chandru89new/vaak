@@ -1,6 +1,8 @@
 module RssGenerator where
 
 import Prelude
+
+import Control.Parallel (parTraverse)
 import Data.Array (foldl, head)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), Replacement(..), replaceAll)
@@ -9,7 +11,7 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class.Console (log)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, writeTextFile)
-import Utils (FormattedMarkdownData, askConfig)
+import Utils (FrontMatterS, FormattedMarkdownData, askConfig, md2FormattedData)
 import Utils as Utils
 
 feedItemTemplate ∷ String
@@ -22,11 +24,12 @@ feedItemTemplate =
 <pubDate>{{published_date}}</pubDate>
 </item>"""
 
-generateRSSFeed :: Array FormattedMarkdownData -> Aff Unit
+generateRSSFeed :: Array FrontMatterS -> Aff Unit
 generateRSSFeed fds = do
   config <- askConfig
   templateContents <- readTextFile UTF8 (config.templateFolder <> "/feed.xml")
-  feedItemsString <- pure $ generateFeedItemString feedItemTemplate fds
+  parsedContents <- parTraverse (\fm -> md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fm.slug <> ".md")) fds
+  feedItemsString <- pure $ generateFeedItemString feedItemTemplate parsedContents
   lastUpdated <- pure $ getLastUpdated (head fds)
   updatedFeedContents <- pure $ replaceFeedContents feedItemsString lastUpdated templateContents
   writeTextFile UTF8 (Utils.tmpFolder <> "/feed.xml") updatedFeedContents
@@ -34,6 +37,7 @@ generateRSSFeed fds = do
 generateFeedItemString :: String -> Array FormattedMarkdownData -> String
 generateFeedItemString template = foldl fn ""
   where
+  fn :: String -> FormattedMarkdownData -> String
   fn b fd =
     b
       <>
@@ -43,10 +47,10 @@ generateFeedItemString template = foldl fn ""
             # replaceAll (Pattern "{{published_date}}") (Replacement $ Utils.formatDate rssDateFormat fd.frontMatter.date)
         )
 
-getLastUpdated :: Maybe FormattedMarkdownData -> String
+getLastUpdated :: Maybe FrontMatterS -> String
 getLastUpdated Nothing = ""
 
-getLastUpdated (Just fd) = Utils.formatDate rssDateFormat fd.frontMatter.date
+getLastUpdated (Just fd) = Utils.formatDate rssDateFormat fd.date
 
 replaceFeedContents :: String -> String -> String -> String
 replaceFeedContents items lastUpdatedAt template =

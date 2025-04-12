@@ -2,9 +2,10 @@ module Main where
 
 import Prelude
 
+import Cache (CacheData, needsInvalidation', readCacheData)
 import Cache as Cache
 import Control.Monad.Except (ExceptT(..), runExceptT)
-import Control.Parallel (parTraverse, parTraverse_)
+import Control.Parallel (parTraverse)
 import Data.Array (catMaybes, drop, filter, find, foldl, head, sortBy, take)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -15,7 +16,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (Pattern(..), Replacement(..), contains, joinWith, replaceAll, split)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff (Aff, Error, launchAff_, try, throwError)
+import Effect.Aff (Aff, Error, launchAff_, throwError, try)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Exception (error)
@@ -24,11 +25,10 @@ import Node.Buffer (Buffer)
 import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
-import Node.Path (FilePath)
 import Node.Process (argv, exit)
 import Prelude as Maybe
 import RssGenerator as Rss
-import Utils (Config, FormattedMarkdownData, Status(..), archiveTemplate, askConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, md2FormattedData, md2RawFormattedData, newPostTemplate, tmpFolder)
+import Utils (Config, FormattedMarkdownData, FrontMatterS, Status(..), archiveTemplate, askConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, md2FormattedData, newPostTemplate, tmpFolder)
 import Utils as U
 
 main :: Effect Unit
@@ -37,19 +37,19 @@ main = do
   cmd <- pure $ mkCommand args
   case cmd of
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.5.1"
+    ShowVersion -> log $ "v0.6.0"
     NewPost slug ->
       launchAff_
         $ do
             config <- askConfig
             res <- runExceptT $ createNewPost config slug
             case res of
-              Left err -> liftEffect $ do
-                log $ Logs.logError ("Could not create a new post: " <> show err)
-                exit 1
-              Right _ -> liftEffect $ log $ Logs.logSuccess "Created new post. Happy writing!"
+              Left err -> do
+                _ <- Logs.logError ("Could not create a new post: " <> show err)
+                liftEffect $ exit 1
+              Right _ -> Logs.logSuccess "Created new post. Happy writing!"
     Invalid -> do
-      log $ Logs.logError $ "Invalid command."
+      Logs.logError $ "Invalid command."
       log $ helpText
       exit 1
     Build ->
@@ -60,9 +60,9 @@ main = do
             _ <- try $ liftEffect $ execSync ("rm -rf " <> tmpFolder) defaultExecSyncOptions
             case res of
               Left err -> do
-                log $ Logs.logError $ "Error when building the site: " <> show err
+                Logs.logError $ "Error when building the site: " <> show err
                 liftEffect $ exit 1
-              Right _ -> log $ Logs.logSuccess "Site built and available in the " <> config.outputFolder <> " folder."
+              Right _ -> Logs.logSuccess $ "Site built and available in the " <> config.outputFolder <> " folder."
 
 helpText :: String
 helpText =
@@ -77,42 +77,40 @@ buildSite :: Config -> ExceptT Error Aff Unit
 buildSite config =
   ExceptT $ try
     $ do
-        log $ Logs.logInfo "Starting..."
+        Logs.logInfo "Starting..."
         _ <- createFolderIfNotPresent tmpFolder
-        { postsToPublish, postsToRebuild } <- getPostsAndSort config.contentFolder
-        log $ Logs.logInfo "Generating posts pages..."
-        _ <- generatePostsHTML postsToRebuild
-        log $ Logs.logSuccess $ "Posts page generated."
-        log $ Logs.logInfo $ "Generating archive page..."
-        _ <- writeArchiveByYearPage postsToPublish
-        log $ Logs.logSuccess $ "Archive page generated."
-        log $ Logs.logInfo $ "Generating home page..."
-        _ <- createHomePage postsToPublish
-        log $ Logs.logSuccess $ "Home page generated."
-        log $ Logs.logInfo $ "Copying 404.html..."
+        postsMetadata <- generatePostsHTML
+        Logs.logSuccess $ "Posts page generated."
+        Logs.logInfo $ "Generating archive page..."
+        _ <- writeArchiveByYearPage postsMetadata
+        Logs.logSuccess $ "Archive page generated."
+        Logs.logInfo $ "Generating home page..."
+        _ <- createHomePage postsMetadata
+        Logs.logSuccess $ "Home page generated."
+        Logs.logInfo $ "Copying 404.html..."
         _ <- liftEffect $ execSync ("cp " <> config.templateFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
-        log $ Logs.logSuccess $ "404.html copied."
-        log $ Logs.logInfo "Copying images folder..."
+        Logs.logSuccess $ "404.html copied."
+        Logs.logInfo "Copying images folder..."
         _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
-        log $ Logs.logSuccess $ "images folder copied."
-        log $ Logs.logInfo "Copying js folder..."
+        Logs.logSuccess $ "images folder copied."
+        Logs.logInfo "Copying js folder..."
         _ <- liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
-        log $ Logs.logSuccess "js folder copied."
-        log $ Logs.logInfo "Generating styles.css..."
-        log $ Logs.logInfo "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
+        Logs.logSuccess "js folder copied."
+        Logs.logInfo "Generating styles.css..."
+        Logs.logInfo "This may take a while. I am installing (temporarily) TailwindCSS to generate the stylesheet."
         _ <- generateStyles
-        log $ Logs.logSuccess "styles.css generated."
-        log $ Logs.logInfo "Generating RSS feed..."
-        _ <- Rss.generateRSSFeed postsToPublish
-        log $ Logs.logSuccess "RSS feed generated."
+        Logs.logSuccess "styles.css generated."
+        Logs.logInfo "Generating RSS feed..."
+        _ <- Rss.generateRSSFeed (take 10 postsMetadata)
+        Logs.logSuccess "RSS feed generated."
         _ <- cleanupNodeModules
-        log $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
+        Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
         _ <- createFolderIfNotPresent config.outputFolder
         _ <- liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder) defaultExecSyncOptions
-        log $ Logs.logSuccess "Copied."
-        log $ Logs.logInfo "Updating cache..."
+        Logs.logSuccess "Copied."
+        Logs.logInfo "Updating cache..."
         _ <- Cache.writeCacheData
-        log $ Logs.logSuccess "Cached updated."
+        Logs.logSuccess "Cached updated."
 
 newtype Template = Template String
 
@@ -140,27 +138,6 @@ mkCommand xs = case head (drop 2 xs) of
     _ -> Invalid
   _ -> Invalid
 
-readFileToData :: String -> Aff FormattedMarkdownData
-readFileToData filePath = do
-  contents <- readTextFile UTF8 filePath
-  let
-    fd = md2FormattedData contents
-
-    fdraw = md2RawFormattedData contents
-  if fd.frontMatter.status == InvalidStatus then
-    throwError $ error $ "Invalid status in " <> filePath <> "." <> "Found -> status: " <> fdraw.frontMatter.status
-  else
-    pure fd
-
-writeHTMLFile :: Template -> FormattedMarkdownData -> Aff Unit
-writeHTMLFile template pd@{ frontMatter } = do
-  config <- askConfig
-  res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> frontMatter.slug <> ".html") (replaceContentInTemplate template pd)
-  _ <- case res of
-    Left err -> log $ Logs.logError $ "Could not write " <> frontMatter.slug <> ".md to html (" <> show err <> ")"
-    Right _ -> log $ Logs.logSuccess $ "Wrote: " <> config.contentFolder <> "/" <> frontMatter.slug <> ".md -> " <> tmpFolder <> "/" <> frontMatter.slug <> ".html"
-  pure unit
-
 getFilesAndTemplate :: Aff { files :: Array String, template :: String }
 getFilesAndTemplate = do
   config <- askConfig
@@ -168,11 +145,32 @@ getFilesAndTemplate = do
   template <- readPostTemplate
   pure { files, template }
 
-generatePostsHTML :: Array FormattedMarkdownData -> Aff Unit
-generatePostsHTML fds = do
+generatePostsHTML :: Aff (Array (FrontMatterS))
+generatePostsHTML = do
+  config <- askConfig
+  cacheData <- readCacheData
   template <- readPostTemplate
-  _ <- parTraverse_ (\f -> writeHTMLFile (Template template) f) fds
-  pure unit
+  mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
+  -- TODO: this is where we filter mdFiles to just the ones that need to be rebuilt because they have changed.
+  postsMetadata <- parTraverse (\f -> generatePostHTML (Template template) cacheData f) mdFiles
+  pure $ sortPosts $ filter (\d -> d.status == Published) postsMetadata
+
+generatePostHTML :: Template -> CacheData -> String -> Aff (FrontMatterS)
+generatePostHTML template cache fileName = do
+  config <- askConfig
+  fd <- md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fileName)
+  needsBuilding <- needsInvalidation' cache fileName
+  when needsBuilding $ do
+    case fd.frontMatter.status of
+      Draft -> pure unit
+      InvalidStatus s -> do
+        throwError $ error $ "Invalid status '" <> s <> "' in '" <> fileName <> "'."
+      Published -> do
+        res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") (replaceContentInTemplate template fd)
+        case res of
+          Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
+          Right _ -> Logs.logSuccess $ "Wrote: " <> config.contentFolder <> "/" <> fileName <> " -> " <> tmpFolder <> "/" <> fd.frontMatter.slug <> ".html"
+  pure fd.frontMatter
 
 replaceContentInTemplate :: Template -> FormattedMarkdownData -> String
 replaceContentInTemplate (Template template) pd =
@@ -203,7 +201,7 @@ generateStyles = do
 
   command = "npx @tailwindcss/cli -i style1.css -o style.css && rm style1.css"
 
-recentPosts :: Int -> Array FormattedMarkdownData -> String
+recentPosts :: Int -> Array FrontMatterS -> String
 recentPosts n xs =
   let
     recentN = take n xs
@@ -214,9 +212,9 @@ recentPosts n xs =
         where
         renderRecents fds = "<ul>" <> foldl fn "" fds <> "</ul>"
 
-        fn b a = b <> "<li><a href=\"/" <> a.frontMatter.slug <> "\">" <> a.frontMatter.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.frontMatter.date <> "</span>" <> "</li>"
+        fn b a = b <> "<li><a href=\"/" <> a.slug <> "\">" <> a.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.date <> "</span>" <> "</li>"
 
-createHomePage :: Array FormattedMarkdownData -> Aff Unit
+createHomePage :: Array FrontMatterS -> Aff Unit
 createHomePage sortedArrayofPosts = do
   config <- askConfig
   recentsString <- pure $ recentPosts config.totalRecentPosts sortedArrayofPosts
@@ -236,45 +234,45 @@ createHomePage sortedArrayofPosts = do
   renderPosts :: Array String -> String
   renderPosts posts = foldl fn2 "" (filteredPosts posts)
 
-  filteredPosts :: Array String -> Array FormattedMarkdownData
+  filteredPosts :: Array String -> Array FrontMatterS
   filteredPosts xs =
     map
       ( \x ->
-          find (\p -> p.frontMatter.slug == x) sortedArrayofPosts
+          find (\p -> p.slug == x) sortedArrayofPosts
       )
       xs
       # catMaybes
       # sortPosts
 
-  fn2 b a = b <> "<li><a href=\"./" <> a.frontMatter.slug <> "\">" <> a.frontMatter.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.frontMatter.date <> "</span></li>"
+  fn2 b a = b <> "<li><a href=\"./" <> a.slug <> "\">" <> a.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.date <> "</span></li>"
 
-getPostsAndSort :: FilePath -> Aff ({ postsToPublish :: Array FormattedMarkdownData, postsToRebuild :: Array FormattedMarkdownData })
-getPostsAndSort folder = do
-  config <- askConfig
-  filePaths <- readdir folder
-  onlyMarkdownFiles <- pure $ filter (contains (Pattern ".md")) filePaths
-  oldCacheData <- Cache.readCacheData
-  newCacheData <- Cache.createCacheData
-  formattedDataArray <- filePathsToProcessedData config onlyMarkdownFiles
-  removeDraft <- pure $ filter (\f -> f.frontMatter.status /= Draft) formattedDataArray
-  removeCached <- pure $ filter (\f -> Cache.needsInvalidation oldCacheData newCacheData f.frontMatter.slug) removeDraft
-  pure $ { postsToPublish: sortPosts removeDraft, postsToRebuild: sortPosts removeCached }
-  where
-  filePathsToProcessedData :: Config -> Array String -> Aff (Array FormattedMarkdownData)
-  filePathsToProcessedData config fpaths = parTraverse (\f -> readFileToData $ config.contentFolder <> "/" <> f) fpaths
+-- getPostsAndSort :: Aff ({ postsToPublish :: Array String, postsToRebuild :: Array String })
+-- getPostsAndSort = do
+--   config <- askConfig
+--   filePaths <- readdir config.contentFolder
+--   onlyMarkdownFiles <- pure $ filter (contains (Pattern ".md")) filePaths
+--   oldCacheData <- Cache.readCacheData
+--   newCacheData <- Cache.createCacheData
+--   formattedDataArray <- filePathsToProcessedData config onlyMarkdownFiles
+--   removeDraft <- pure $ filter (\f -> f.frontMatter.status /= Draft) formattedDataArray
+--   removeCached <- pure $ filter (\f -> Cache.needsInvalidation oldCacheData newCacheData f.frontMatter.slug) removeDraft
+--   pure $ { postsToPublish: sortPosts removeDraft, postsToRebuild: sortPosts removeCached }
+--   where
+--   filePathsToProcessedData :: Config -> Array String -> Aff (Array FormattedMarkdownData)
+--   filePathsToProcessedData config fpaths = parTraverse (\f -> readFileToData $ config.contentFolder <> "/" <> f) fpaths
 
-sortPosts :: Array FormattedMarkdownData -> Array FormattedMarkdownData
-sortPosts = sortBy (\a b -> if a.frontMatter.date < b.frontMatter.date then GT else LT)
+sortPosts :: Array FrontMatterS -> Array FrontMatterS
+sortPosts = sortBy (\a b -> if a.date < b.date then GT else LT)
 
-groupPostsByYear :: Array FormattedMarkdownData -> Map Int (Array FormattedMarkdownData)
+groupPostsByYear :: Array (FrontMatterS) -> Map Int (Array (FrontMatterS))
 groupPostsByYear posts = foldl foldFn Map.empty posts
   where
-  foldFn :: (Map Int (Array FormattedMarkdownData)) -> FormattedMarkdownData -> Map Int (Array FormattedMarkdownData)
+  foldFn :: (Map Int (Array (FrontMatterS))) -> (FrontMatterS) -> Map Int (Array (FrontMatterS))
   foldFn b a =
     let
       updateFn v = Just $ Array.snoc (fromMaybe [] v) a
 
-      year = extractYear a.frontMatter.date
+      year = extractYear a.date
     in
       case year of
         Nothing -> b
@@ -286,19 +284,19 @@ groupPostsByYear posts = foldl foldFn Map.empty posts
       # Maybe.map (fromString)
       # join
 
-groupedPostsToHTML :: Map Int (Array FormattedMarkdownData) -> String
+groupedPostsToHTML :: Map Int (Array FrontMatterS) -> String
 groupedPostsToHTML groupedPosts =
   let
-    formattedDataToHTML :: FormattedMarkdownData -> String
-    formattedDataToHTML fd = "<li><a href=\"/" <> fd.frontMatter.slug <> "\">" <> fd.frontMatter.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" fd.frontMatter.date <> "</span></li>"
+    formattedDataToHTML :: FrontMatterS -> String
+    formattedDataToHTML fd = "<li><a href=\"/" <> fd.slug <> "\">" <> fd.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" fd.date <> "</span></li>"
 
-    arrayDataToHTML :: Array FormattedMarkdownData -> String
+    arrayDataToHTML :: Array FrontMatterS -> String
     arrayDataToHTML fs = "<ul>" <> (map formattedDataToHTML fs # joinWith "") <> "</ul>"
 
-    mapAsList :: Array (Tuple Int (Array FormattedMarkdownData))
+    mapAsList :: Array (Tuple Int (Array FrontMatterS))
     mapAsList = Map.toUnfoldable groupedPosts # sortBy (\(Tuple a1 _) (Tuple a2 _) -> if a1 > a2 then LT else GT)
 
-    tupleToString :: Tuple Int (Array FormattedMarkdownData) -> String
+    tupleToString :: Tuple Int (Array FrontMatterS) -> String
     tupleToString (Tuple year fds) = "<section><h3>" <> show year <> "</h3><div>" <> arrayDataToHTML fds <> "</div></section>"
 
     result :: String
@@ -306,7 +304,7 @@ groupedPostsToHTML groupedPosts =
   in
     result
 
-writeArchiveByYearPage :: Array FormattedMarkdownData -> Aff Unit
+writeArchiveByYearPage :: Array (FrontMatterS) -> Aff Unit
 writeArchiveByYearPage fds = do
   config <- askConfig
   contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds

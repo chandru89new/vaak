@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Int (fromString)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe, fromMaybe)
 import Data.String (toLower)
 import Effect.Aff (Aff, try)
 import Effect.Class (liftEffect)
@@ -46,22 +46,27 @@ createFolderIfNotPresent folderName = do
 foreign import formatDate :: String -> String -> String
 
 type RawFormattedMarkdownData =
-  { frontMatter ::
-      { title :: String
-      , date :: String
-      , slug :: String
-      , tags :: Array String
-      , status :: String
-      }
+  { frontMatter :: RawFrontMatter
   , content :: String
   , raw :: String
   }
 
+type FrontMatter a =
+  { title :: String
+  , date :: String
+  , slug :: String
+  , tags :: Array String
+  , status :: a
+  }
+
 type FormattedMarkdownData =
-  { frontMatter :: { title :: String, date :: String, slug :: String, tags :: Array String, status :: Status }
+  { frontMatter :: FrontMatterS
   , content :: String
   , raw :: String
   }
+
+type RawFrontMatter = FrontMatter String
+type FrontMatterS = FrontMatter Status
 
 type Category =
   { category :: String
@@ -74,7 +79,6 @@ md2FormattedData :: String -> FormattedMarkdownData
 md2FormattedData s =
   let
     r = md2RawFormattedData s
-
     status = stringToStatus r.frontMatter.status
   in
     { frontMatter: { title: r.frontMatter.title, date: r.frontMatter.date, slug: r.frontMatter.slug, tags: r.frontMatter.tags, status: status }, content: r.content, raw: r.raw }
@@ -84,7 +88,7 @@ foreign import getCategoriesJson :: String -> Array Category
 data Status
   = Draft
   | Published
-  | InvalidStatus
+  | InvalidStatus String
 
 -- Derive instances you need (Show, Eq, etc.)
 derive instance eqStatus :: Eq Status
@@ -94,25 +98,26 @@ derive instance ordStatus :: Ord Status
 instance showStatus :: Show Status where
   show Draft = "Draft"
   show Published = "Published"
-  show InvalidStatus = "InvalidStatus"
+  show (InvalidStatus s) = "InvalidStatus" <> show s
 
 stringToStatus :: String -> Status
 stringToStatus s = case toLower s of
   "draft" -> Draft
   "published" -> Published
-  _ -> InvalidStatus
+  _ -> InvalidStatus s
 
 type Config = { templateFolder :: String, outputFolder :: String, contentFolder :: String, newPostTemplate :: String, totalRecentPosts :: Int }
 
 askConfig :: Aff Config
 askConfig = liftEffect $ do
-  _templateFolder <- lookupEnv "TEMPLATE_DIR"
-  _outputFolder <- lookupEnv "OUTPUT_DIR"
-  _contentFolder <- lookupEnv "POSTS_DIR"
-  _totalRecentPosts <- do
-    rp <- lookupEnv "RECENT_POSTS"
-    pure $ rp >>= fromString
-  pure $ { templateFolder: fromMaybe defaultTemplateFolder _templateFolder, outputFolder: fromMaybe defaultOutputFolder _outputFolder, contentFolder: fromMaybe defaultContentFolder _contentFolder, newPostTemplate: defaultBlogpostTemplate (fromMaybe defaultTemplateFolder _templateFolder), totalRecentPosts: fromMaybe defaultTotalRecentPosts _totalRecentPosts }
+  templateFolder <- lookupEnv "TEMPLATE_DIR" >>= (pure <$> fromMaybe defaultTemplateFolder)
+  outputFolder <- lookupEnv "OUTPUT_DIR" >>= (pure <$> fromMaybe defaultOutputFolder)
+  contentFolder <- lookupEnv "POSTS_DIR" >>= (pure <$> fromMaybe defaultContentFolder)
+  totalRecentPosts <- lookupEnv "RECENT_POSTS" >>= (pure <$> fn)
+  pure $ { templateFolder: templateFolder, outputFolder: outputFolder, contentFolder: contentFolder, newPostTemplate: defaultBlogpostTemplate templateFolder, totalRecentPosts: totalRecentPosts }
+  where
+  fn :: Maybe String -> Int
+  fn x = fromMaybe defaultTotalRecentPosts $ (x >>= fromString)
 
 defaultTotalRecentPosts :: Int
 defaultTotalRecentPosts = 5

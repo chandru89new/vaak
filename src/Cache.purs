@@ -3,10 +3,12 @@ module Cache where
 import Prelude
 
 import Control.Parallel (parTraverse)
-import Data.Array (filter, find, (!!))
+import Data.Array (filter, mapMaybe)
 import Data.Either (Either(..), either, hush)
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String (Pattern(..), Replacement(..), contains, joinWith, replace, split)
+import Data.Map (Map, empty, fromFoldable, lookup)
+import Data.Maybe (Maybe(..))
+import Data.String (Pattern(..), contains, joinWith, split)
+import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, try)
 import Effect.Class (liftEffect)
 import Node.Buffer (toString)
@@ -23,21 +25,21 @@ import Utils (askConfig)
 --   where
 --   -- slugs = map (\fd -> fd.frontMatter.slug) fds
 --   slugs = [ "trust-systems", "use-interval-hook" ]
-getStat :: FilePath -> String -> Aff ({ slug :: String, stat :: String })
-getStat contentsFolder slug = do
-  buf <- try $ liftEffect $ execSync ("stat -f \"%Sm %Sc\" -n " <> contentsFolder <> "/" <> slug <> ".md") defaultExecSyncOptions
+getStat :: FilePath -> String -> Aff ({ filename :: String, stat :: String })
+getStat contentsFolder filename = do
+  buf <- try $ liftEffect $ execSync ("stat -f \"%Sm %Sc\" -n " <> contentsFolder <> "/" <> filename) defaultExecSyncOptions
   case buf of
-    Left _ -> pure $ { slug, stat: "" }
+    Left _ -> pure $ { filename, stat: "" }
     Right buffer -> do
       b <- try $ liftEffect $ toString UTF8 buffer
       case b of
-        Right s -> pure { slug, stat: s }
-        Left _ -> pure { slug, stat: "" }
+        Right s -> pure { filename, stat: s }
+        Left _ -> pure { filename, stat: "" }
 
-getStatAll :: Array String -> Aff (Array { slug :: String, stat :: String })
-getStatAll slugs = do
+getStatAll :: Array String -> Aff (Array { filename :: String, stat :: String })
+getStatAll filenames = do
   config <- askConfig
-  parTraverse (getStat config.contentFolder) slugs
+  parTraverse (getStat config.contentFolder) filenames
 
 writeCacheData :: Aff Unit
 writeCacheData = do
@@ -49,41 +51,33 @@ createCacheData :: Aff String
 createCacheData = do
   config <- askConfig
   contents <- try $ readdir config.contentFolder
-  unwrapped <- pure $ either (\_ -> []) (filter (contains (Pattern ".md")) >>> (map $ replace (Pattern ".md") (Replacement ""))) contents
+  unwrapped <- pure $ either (\_ -> []) (filter (contains (Pattern ".md"))) contents
   stats <- getStatAll unwrapped
   pure $ joinWith "\n" (map toString' stats)
   where
-  toString' { slug, stat } = slug <> "::" <> stat
+  toString' { filename, stat } = filename <> "::" <> stat
 
-getCacheValue :: String -> String -> Maybe String
-getCacheValue cacheData slug =
-  ( split (Pattern "\n")
-      >>> map (\line -> split (Pattern "::") line)
-      >>> find
-        ( \splitLine -> case splitLine !! 0 of
-            Nothing -> false
-            Just s -> s == slug
-        )
-      >>> map (\found -> fromMaybe "" $ found !! 1)
-  )
-    cacheData
-
-readCacheData :: Aff String
+readCacheData :: Aff CacheData
 readCacheData = do
-  cacheContents <- try $ readTextFile UTF8 "./.cache"
-  pure $ fromMaybe "" $ hush cacheContents
+  cacheContents <- (try $ readTextFile UTF8 "./.cache") >>= (\v -> pure $ hush v)
+  case cacheContents of
+    Nothing -> pure empty
+    Just cacheData -> pure $ (split (Pattern "\n") >>> map (\line -> split (Pattern "::") line) >>> fn >>> fromFoldable) cacheData
+  where
+  fn = mapMaybe toTuple
+  toTuple [ k, v ] = Just $ Tuple k v
+  toTuple _ = Nothing
 
-needsInvalidation :: String -> String -> String -> Boolean
-needsInvalidation existingCacheData newCacheData slug =
-  let
-    oldCacheValue = getCacheValue existingCacheData slug
+type CacheData = Map String String
 
-    newCacheValue = getCacheValue newCacheData slug
-  in
-    case oldCacheValue, newCacheValue of
-      Just ocv, Just ncv -> ocv /= ncv
-      _, _ -> true
-
+needsInvalidation' :: CacheData -> String -> Aff Boolean
+needsInvalidation' cacheData filename = do
+  case lookup filename cacheData of
+    Nothing -> pure true
+    Just x -> do
+      config <- askConfig
+      cd <- getStat config.contentFolder filename
+      pure $ cd.stat /= x
 -- test =
 --   launchAff_
 --     $ do
