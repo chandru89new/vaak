@@ -136,13 +136,6 @@ mkCommand xs = case head (drop 2 xs) of
     _ -> Invalid
   _ -> Invalid
 
-getFilesAndTemplate :: Aff { files :: Array String, template :: String }
-getFilesAndTemplate = do
-  config <- askConfig
-  files <- readdir config.contentFolder
-  template <- readPostTemplate
-  pure { files, template }
-
 generatePostsHTML :: Aff (Array (FrontMatterS))
 generatePostsHTML = do
   config <- askConfig
@@ -180,7 +173,7 @@ replaceContentInTemplate (Template template) pd =
 readPostTemplate :: Aff String
 readPostTemplate = do
   config <- askConfig
-  readTextFile UTF8 config.newPostTemplate
+  readTextFile UTF8 config.blogPostTemplate
 
 generateStyles :: Aff Buffer
 generateStyles = do

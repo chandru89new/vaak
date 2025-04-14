@@ -7,7 +7,7 @@ import Data.Int (fromString)
 import Data.Maybe (Maybe, fromMaybe)
 import Data.String (toLower)
 import Effect.Aff (Aff, try)
-import Effect.Class (liftEffect)
+import Effect.Class (class MonadEffect, liftEffect)
 import Node.FS.Aff (mkdir, readdir)
 import Node.Path (FilePath)
 import Node.Process (lookupEnv)
@@ -106,15 +106,15 @@ stringToStatus s = case toLower s of
   "published" -> Published
   _ -> InvalidStatus s
 
-type Config = { templateFolder :: String, outputFolder :: String, contentFolder :: String, newPostTemplate :: String, totalRecentPosts :: Int }
+type Config = { templateFolder :: String, outputFolder :: String, contentFolder :: String, blogPostTemplate :: String, totalRecentPosts :: Int }
 
-askConfig :: Aff Config
+askConfig :: forall m. (MonadEffect m) => m Config
 askConfig = liftEffect $ do
   templateFolder <- lookupEnv "TEMPLATE_DIR" >>= (pure <$> fromMaybe defaultTemplateFolder)
   outputFolder <- lookupEnv "OUTPUT_DIR" >>= (pure <$> fromMaybe defaultOutputFolder)
   contentFolder <- lookupEnv "POSTS_DIR" >>= (pure <$> fromMaybe defaultContentFolder)
   totalRecentPosts <- lookupEnv "RECENT_POSTS" >>= (pure <$> fn)
-  pure $ { templateFolder: templateFolder, outputFolder: outputFolder, contentFolder: contentFolder, newPostTemplate: defaultBlogpostTemplate templateFolder, totalRecentPosts: totalRecentPosts }
+  pure $ { templateFolder: templateFolder, outputFolder: outputFolder, contentFolder: contentFolder, blogPostTemplate: defaultBlogpostTemplate templateFolder, totalRecentPosts: totalRecentPosts }
   where
   fn :: Maybe String -> Int
   fn x = fromMaybe defaultTotalRecentPosts $ (x >>= fromString)
