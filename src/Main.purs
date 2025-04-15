@@ -45,31 +45,27 @@ main = do
       case res of
         Left err -> Logs.logError $ "Could not initialize the app: " <> show err
         Right _ -> Logs.logSuccess $ "Templates generated in " <> config.templateFolder <> ". You can edit them."
-    NewPost slug ->
-      launchAff_
-        $ do
-            config <- askConfig
-            res <- runExceptT $ createNewPost config slug
-            case res of
-              Left err -> do
-                _ <- Logs.logError ("Could not create a new post: " <> show err)
-                liftEffect $ exit 1
-              Right _ -> Logs.logSuccess "Created new post. Happy writing!"
+    NewPost slug -> launchAff_ $ do
+      config <- askConfig
+      res <- runExceptT $ createNewPost config slug
+      case res of
+        Left err -> do
+          _ <- Logs.logError ("Could not create a new post: " <> show err)
+          liftEffect $ exit 1
+        Right _ -> Logs.logSuccess "Created new post. Happy writing!"
     Invalid -> do
       Logs.logError $ "Invalid command."
       log $ helpText
       exit 1
-    Build ->
-      launchAff_
-        $ do
-            config <- askConfig
-            res <- runExceptT $ buildSite config
-            _ <- try $ liftEffect $ execSync ("rm -rf " <> tmpFolder) defaultExecSyncOptions
-            case res of
-              Left err -> do
-                Logs.logError $ "Error when building the site: " <> show err
-                liftEffect $ exit 1
-              Right _ -> Logs.logSuccess $ "Site built and available in the " <> config.outputFolder <> " folder."
+    Build -> launchAff_ $ do
+      config <- askConfig
+      res <- runExceptT $ buildSite config
+      _ <- try $ liftEffect $ execSync ("rm -rf " <> tmpFolder) defaultExecSyncOptions
+      case res of
+        Left err -> do
+          Logs.logError $ "Error when building the site: " <> show err
+          liftEffect $ exit 1
+        Right _ -> Logs.logSuccess $ "Site built and available in the " <> config.outputFolder <> " folder."
 
 helpText :: String
 helpText =
