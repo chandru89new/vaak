@@ -7,7 +7,8 @@ import Data.Array (foldl, head)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), Replacement(..), replaceAll)
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
+import Effect.Aff (Aff, launchAff_, throwError)
+import Effect.Exception (error)
 import Effect.Class.Console (log)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, writeTextFile)
@@ -30,10 +31,14 @@ generateRSSFeed fds = do
   config <- askConfig
   templateContents <- readTextFile UTF8 (config.templateFolder <> "/feed.xml")
   parsedContents <- parTraverse (\fm -> md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fm.slug <> ".md")) fds
-  feedItemsString <- pure $ generateFeedItemString config.domain feedItemTemplate parsedContents
-  lastUpdated <- pure $ getLastUpdated (head fds)
-  updatedFeedContents <- pure $ replaceFeedContents feedItemsString lastUpdated templateContents
-  writeTextFile UTF8 (Utils.tmpFolder <> "/feed.xml") updatedFeedContents
+  case config.domain of
+    Nothing -> do
+      throwError $ error "Cannot generate RSS feed without a SITE_URL set in the environment. (e.g SITE_URL=https://my.blog)."
+    Just domain -> do
+      feedItemsString <- pure $ generateFeedItemString domain feedItemTemplate parsedContents
+      lastUpdated <- pure $ getLastUpdated (head fds)
+      updatedFeedContents <- pure $ replaceFeedContents feedItemsString lastUpdated templateContents
+      writeTextFile UTF8 (Utils.tmpFolder <> "/feed.xml") updatedFeedContents
 
 generateFeedItemString :: String -> String -> Array FormattedMarkdownData -> String
 generateFeedItemString domain template = foldl fn ""

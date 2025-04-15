@@ -2,6 +2,8 @@ module Templates where
 
 import Prelude
 
+import Data.Maybe (Maybe)
+
 indexHtmlTemplate :: String
 indexHtmlTemplate =
   """

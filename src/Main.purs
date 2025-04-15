@@ -12,7 +12,7 @@ import Data.Either (Either(..))
 import Data.Int (fromString)
 import Data.Map (Map)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.String (Pattern(..), Replacement(..), contains, joinWith, replaceAll, split)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -298,7 +298,8 @@ initApp = ExceptT $ try $ do
   Logs.logInfo "Generating style.css..."
   writeTextFile UTF8 (config.templateFolder <> "/style.css") styleTemplate
   Logs.logInfo "Generating feed.xml..."
-  writeTextFile UTF8 (config.templateFolder <> "/feed.xml") (feedTemplate config.domain)
+  when (isNothing config.domain) $ Logs.logWarning "feed.xml template is missing domain because you have not set SITE_URL in the environment. Manually edit the feed.xml file to add the correct domain. When building the site, you will need to set the domain in your shell enviroment. (e.g SITE_URL=https://my.blog)"
+  writeTextFile UTF8 (config.templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "https://my.blog" config.domain))
   Logs.logInfo "Generating archive.html..."
   writeTextFile UTF8 (config.templateFolder <> "/archive.html") archiveHtmlTemplate
   Logs.logInfo "Generating 404.html..."

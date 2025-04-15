@@ -2,6 +2,8 @@ module Types where
 
 import Prelude
 
+import Data.Maybe (Maybe)
+
 -- Types from Utils.purs
 type RawFormattedMarkdownData =
   { frontMatter :: RawFrontMatter
@@ -51,7 +53,7 @@ type Config =
   , contentFolder :: String
   , blogPostTemplate :: String
   , totalRecentPosts :: Int 
-  , domain :: String
+  , domain :: Maybe String
   }
 
 -- Types from Main.purs

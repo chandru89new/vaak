@@ -66,15 +66,11 @@ askConfig = liftEffect $ do
   outputFolder <- lookupEnv "OUTPUT_DIR" >>= (pure <$> fromMaybe defaultOutputFolder)
   contentFolder <- lookupEnv "POSTS_DIR" >>= (pure <$> fromMaybe defaultContentFolder)
   totalRecentPosts <- lookupEnv "RECENT_POSTS" >>= (pure <$> fn)
-  domain <- lookupEnv "SITE_URL" >>= (pure <$> cleanupDomain)
+  domain <- lookupEnv "SITE_URL" >>= (\v -> pure $ (dropLeadingSlash <$> v))
   pure $ { domain: domain, templateFolder: templateFolder, outputFolder: outputFolder, contentFolder: contentFolder, blogPostTemplate: defaultBlogpostTemplate templateFolder, totalRecentPosts: totalRecentPosts }
   where
   fn :: Maybe String -> Int
   fn x = fromMaybe defaultTotalRecentPosts $ (x >>= fromString)
-
-  cleanupDomain :: Maybe String -> String
-  cleanupDomain Nothing = "https://my.blog"
-  cleanupDomain (Just x) = dropLeadingSlash x
 
 defaultTotalRecentPosts :: Int
 defaultTotalRecentPosts = 5
