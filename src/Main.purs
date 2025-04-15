@@ -28,8 +28,9 @@ import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Process (argv, exit)
 import Prelude as Maybe
 import RssGenerator as Rss
-import Utils (Config, FormattedMarkdownData, FrontMatterS, Status(..), archiveTemplate, askConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, md2FormattedData, newPostTemplate, tmpFolder)
-import Utils as U
+import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
+import Types (Category, Command(..), Config, FormattedMarkdownData, FrontMatterS, Status(..), Template(..))
+import Utils (archiveTemplate, askConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, md2FormattedData, newPostTemplate, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -38,6 +39,12 @@ main = do
   case cmd of
     Help -> log $ helpText
     ShowVersion -> log $ "v0.7.1"
+    Init -> launchAff_ $ do
+      config <- askConfig
+      res <- runExceptT initApp
+      case res of
+        Left err -> Logs.logError $ "Could not initialize the app: " <> show err
+        Right _ -> Logs.logSuccess $ "Templates generated in " <> config.templateFolder <> ". You can edit them."
     NewPost slug ->
       launchAff_
         $ do
@@ -69,6 +76,7 @@ helpText =
   """Commands:
   help - print this help text.
   version - print version info.
+  init - initialize the project.
   build - build the site.
   new [slug] - create a new post.
 """
@@ -110,26 +118,11 @@ buildSite config =
         _ <- Cache.writeCacheData
         Logs.logSuccess "Cached updated."
 
-newtype Template = Template String
-
-data Command
-  = Build
-  | ShowVersion
-  | Help
-  | NewPost String
-  | Invalid
-
-instance showCommand :: Show Command where
-  show Build = "Build"
-  show Help = "Help"
-  show (NewPost _) = "NewPost"
-  show Invalid = "Invalid"
-  show ShowVersion = "ShowVersion"
-
 mkCommand :: Array String -> Command
 mkCommand xs = case head (drop 2 xs) of
   Just "version" -> ShowVersion
   Just "help" -> Help
+  Just "init" -> Init
   Just "build" -> Build
   Just "new" -> case head $ drop 3 xs of
     Just slug -> NewPost slug
@@ -212,7 +205,7 @@ createHomePage sortedArrayofPosts = do
           # replaceAll (Pattern "{{posts_by_categories}}") (Replacement categories)
   writeTextFile UTF8 (tmpFolder <> "/index.html") contents
   where
-  convertCategoriesToString :: Array U.Category -> String
+  convertCategoriesToString :: Array Category -> String
   convertCategoriesToString = foldl fn ""
 
   fn b a = b <> "<section><h3 class=\"category\">" <> a.category <> "</h3>" <> "<ul>" <> renderPosts a.posts <> "</ul></section>"
@@ -231,21 +224,6 @@ createHomePage sortedArrayofPosts = do
       # sortPosts
 
   fn2 b a = b <> "<li><a href=\"./" <> a.slug <> "\">" <> a.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.date <> "</span></li>"
-
--- getPostsAndSort :: Aff ({ postsToPublish :: Array String, postsToRebuild :: Array String })
--- getPostsAndSort = do
---   config <- askConfig
---   filePaths <- readdir config.contentFolder
---   onlyMarkdownFiles <- pure $ filter (contains (Pattern ".md")) filePaths
---   oldCacheData <- Cache.readCacheData
---   newCacheData <- Cache.createCacheData
---   formattedDataArray <- filePathsToProcessedData config onlyMarkdownFiles
---   removeDraft <- pure $ filter (\f -> f.frontMatter.status /= Draft) formattedDataArray
---   removeCached <- pure $ filter (\f -> Cache.needsInvalidation oldCacheData newCacheData f.frontMatter.slug) removeDraft
---   pure $ { postsToPublish: sortPosts removeDraft, postsToRebuild: sortPosts removeCached }
---   where
---   filePathsToProcessedData :: Config -> Array String -> Aff (Array FormattedMarkdownData)
---   filePathsToProcessedData config fpaths = parTraverse (\f -> readFileToData $ config.contentFolder <> "/" <> f) fpaths
 
 sortPosts :: Array FrontMatterS -> Array FrontMatterS
 sortPosts = sortBy (\a b -> if a.date < b.date then GT else LT)
@@ -309,3 +287,26 @@ createNewPost config slug =
             $ replaceAll (Pattern "$date") (Replacement today) newPostTemplateContents
                 # replaceAll (Pattern "$slug") (Replacement slug)
         writeTextFile UTF8 (config.contentFolder <> "/" <> slug <> ".md") replaced
+
+initApp :: ExceptT Error Aff Unit
+initApp = ExceptT $ try $ do
+  config <- askConfig
+  createFolderIfNotPresent config.templateFolder
+  createFolderIfNotPresent config.contentFolder
+  createFolderIfNotPresent "images"
+  createFolderIfNotPresent "js"
+  Logs.logInfo "Generating index.html..."
+  writeTextFile UTF8 (config.templateFolder <> "/index.html") indexHtmlTemplate
+  Logs.logInfo "Generating post.html..."
+  writeTextFile UTF8 (config.templateFolder <> "/post.html") postHtmlTemplate
+  Logs.logInfo "Generating style.css..."
+  writeTextFile UTF8 (config.templateFolder <> "/style.css") styleTemplate
+  Logs.logInfo "Generating feed.xml..."
+  writeTextFile UTF8 (config.templateFolder <> "/feed.xml") (feedTemplate config.domain)
+  Logs.logInfo "Generating archive.html..."
+  writeTextFile UTF8 (config.templateFolder <> "/archive.html") archiveHtmlTemplate
+  Logs.logInfo "Generating 404.html..."
+  writeTextFile UTF8 (config.templateFolder <> "/404.html") notFoundTemplate
+  Logs.logInfo "Generating new post markdown template..."
+  writeTextFile UTF8 (config.templateFolder <> "/post.md") postMdTemplate
+  Logs.logSuccess "Done! You can now edit these templates. Just retain the handlebars."

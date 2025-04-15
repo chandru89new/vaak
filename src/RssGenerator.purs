@@ -11,7 +11,8 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class.Console (log)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, writeTextFile)
-import Utils (FrontMatterS, FormattedMarkdownData, askConfig, md2FormattedData)
+import Types (FormattedMarkdownData, FrontMatterS)
+import Utils (askConfig, md2FormattedData)
 import Utils as Utils
 
 feedItemTemplate ∷ String
@@ -29,20 +30,20 @@ generateRSSFeed fds = do
   config <- askConfig
   templateContents <- readTextFile UTF8 (config.templateFolder <> "/feed.xml")
   parsedContents <- parTraverse (\fm -> md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fm.slug <> ".md")) fds
-  feedItemsString <- pure $ generateFeedItemString feedItemTemplate parsedContents
+  feedItemsString <- pure $ generateFeedItemString config.domain feedItemTemplate parsedContents
   lastUpdated <- pure $ getLastUpdated (head fds)
   updatedFeedContents <- pure $ replaceFeedContents feedItemsString lastUpdated templateContents
   writeTextFile UTF8 (Utils.tmpFolder <> "/feed.xml") updatedFeedContents
 
-generateFeedItemString :: String -> Array FormattedMarkdownData -> String
-generateFeedItemString template = foldl fn ""
+generateFeedItemString :: String -> String -> Array FormattedMarkdownData -> String
+generateFeedItemString domain template = foldl fn ""
   where
   fn :: String -> FormattedMarkdownData -> String
   fn b fd =
     b
       <>
         ( replaceAll (Pattern "{{title}}") (Replacement $ formatTitle fd.frontMatter.title) template
-            # replaceAll (Pattern "{{post_url}}") (Replacement ("https://notes.druchan.com/" <> fd.frontMatter.slug))
+            # replaceAll (Pattern "{{post_url}}") (Replacement (domain <> "/" <> fd.frontMatter.slug))
             # replaceAll (Pattern "{{content}}") (Replacement fd.content)
             # replaceAll (Pattern "{{published_date}}") (Replacement $ Utils.formatDate rssDateFormat fd.frontMatter.date)
         )
