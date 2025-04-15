@@ -1,8 +1,8 @@
-# vaak (vāk) - A static site generator for Markdown
+# vaak (vāk) - A minimal, static blog generator
 
 A simple Node.js script for generating a static blog.
 
-Example: `https://notes.druchan.com`
+Example: [`https://notes.druchan.com`](https://notes.druchan.com)
 
 ## Installation
 
@@ -17,7 +17,7 @@ chmod +x vaak.cjs
 
 ## Usage
 
-vāk provides several commands to manage your static site:
+vāk provides several commands to manage your static blog:
 
 ```bash
 # Init a new project (or in your existing project)
@@ -26,7 +26,7 @@ vāk provides several commands to manage your static site:
 # Create a new post
 ./vaak.cjs new [slug]
 
-# Build the site
+# Build the blog
 ./vaak.cjs build
 
 # Show version information
@@ -44,7 +44,7 @@ your-blog/
 ├── templates/      # HTML templates (this is created by `vaak.cjs init` and you can edit the contents of the files)
 ├── images/         # Image assets
 ├── js/             # JavaScript files
-└── public/         # Generated site
+└── public/         # Generated blog
 ```
 
 You can use any directory name for the posts, the templates and the public (output) folders. Just configure them through shell environment variables ([see configuration](#configuration)).
@@ -71,11 +71,11 @@ Note: The `slug` should be the same as the filename without the `.md` extension.
 vāk uses environment variables for configuration:
 
 - `TEMPLATE_DIR`: Directory containing HTML templates (default: "./templates")
-- `OUTPUT_DIR`: Directory where the built site will be generated (default: "./public")
+- `OUTPUT_DIR`: Directory where the built blog will be generated (default: "./public")
 - `POSTS_DIR`: Directory containing your markdown posts (default: "./posts")
 - `RECENT_POSTS`: Number of recent posts to show on homepage (default: 5)
-- `SITE_URL`: The domain name of the blog. (eg. `https://yourname.com/blog`)
+- `SITE_URL`: The domain name of the blog. (eg. `https://yourname.com/blog`) This is required for generating RSS feed anytime you build the blog.
 
 ## Colophon
 
-वाक् (vāk) is Sanskrit for "speech" or "voice", representing this tool's purpose of giving voice to your written content through elegant static site generation.
+वाक् (vāk) is Sanskrit for "speech" or "voice".
