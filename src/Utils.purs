@@ -5,7 +5,7 @@ import Prelude
 import Data.Array (last)
 import Data.Either (Either(..))
 import Data.Int (fromString)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe, fromMaybe)
 import Data.String (take, length, toLower)
 import Data.String.CodeUnits (toCharArray)
 import Effect.Aff (Aff, try)
@@ -75,7 +75,6 @@ askConfig = liftEffect $ do
 defaultTotalRecentPosts :: Int
 defaultTotalRecentPosts = 5
 
--- Helper functions
 stringToStatus :: String -> Status
 stringToStatus s = case toLower s of
   "draft" -> Draft
@@ -86,8 +85,9 @@ endsWith :: Char -> String -> Boolean
 endsWith ch str =
   let
     asArray = toCharArray str
-  in fromMaybe false ((==) ch <$> (last asArray))
+  in
+    fromMaybe false ((==) ch <$> (last asArray))
 
 dropLeadingSlash :: String -> String
-dropLeadingSlash str = 
-  if endsWith '/' str then take (length str - 1) str else str 
+dropLeadingSlash str =
+  if endsWith '/' str then take (length str - 1) str else str
