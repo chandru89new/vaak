@@ -2,14 +2,12 @@ module Utils where
 
 import Prelude
 
-import Control.Monad.List.Trans (catMaybes)
-import Data.Array (init, last, (!!), length)
+import Data.Array (last)
 import Data.Either (Either(..))
 import Data.Int (fromString)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String (joinWith, toLower)
-import Data.String.CodeUnits (fromCharArray, toCharArray)
-import Data.String.Regex (Regex, split)
+import Data.String (take, length, toLower)
+import Data.String.CodeUnits (toCharArray)
 import Effect.Aff (Aff, try)
 import Effect.Class (class MonadEffect, liftEffect)
 import Node.FS.Aff (mkdir, readdir)
@@ -92,13 +90,8 @@ endsWith :: Char -> String -> Boolean
 endsWith ch str =
   let
     asArray = toCharArray str
-    lastChar = asArray !! (length asArray - 1)
-  in case lastChar of
-    Just c -> c == ch
-    _ -> false
+  in fromMaybe false ((==) ch <$> (last asArray))
 
 dropLeadingSlash :: String -> String
 dropLeadingSlash str = 
-  if endsWith '/' str then fromMaybe "" go else str 
-  where
-  go = map fromCharArray $ init (toCharArray str) 
+  if endsWith '/' str then take (length str - 1) str else str 

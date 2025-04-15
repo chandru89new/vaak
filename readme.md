@@ -70,7 +70,7 @@ Note: The `slug` should be the same as the filename without the `.md` extension.
 
 vāk uses environment variables for configuration:
 
-- `TEMPLATE_DIR`: Directory containing HTML templates (default: "./template")
+- `TEMPLATE_DIR`: Directory containing HTML templates (default: "./templates")
 - `OUTPUT_DIR`: Directory where the built site will be generated (default: "./public")
 - `POSTS_DIR`: Directory containing your markdown posts (default: "./posts")
 - `RECENT_POSTS`: Number of recent posts to show on homepage (default: 5)
