@@ -2,7 +2,12 @@ module Types where
 
 import Prelude
 
+import Control.Monad.Except (ExceptT(..), runExceptT)
+import Control.Monad.Reader (ReaderT(..), runReaderT)
+import Data.Either (Either)
 import Data.Maybe (Maybe)
+import Effect.Aff (Aff, try)
+import Effect.Exception (Error)
 
 -- Types from Utils.purs
 type RawFormattedMarkdownData =
@@ -76,3 +81,10 @@ instance showCommand :: Show Command where
   show ShowVersion = "ShowVersion"
 
 
+type AppM a = ReaderT Config (ExceptT Error Aff) a
+
+runAppM :: forall a. Config -> AppM a -> Aff (Either Error a)
+runAppM config app = runExceptT $ runReaderT app config
+
+liftAppM :: forall a. Aff a -> AppM a
+liftAppM aff = ReaderT \_ -> ExceptT $ try $ aff

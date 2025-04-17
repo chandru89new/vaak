@@ -2,18 +2,17 @@ module RssGenerator where
 
 import Prelude
 
+import Control.Monad.Reader (ask)
 import Control.Parallel (parTraverse)
 import Data.Array (foldl, head)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), Replacement(..), replaceAll)
-import Effect (Effect)
-import Effect.Aff (Aff, launchAff_, throwError)
+import Effect.Aff (throwError)
 import Effect.Exception (error)
-import Effect.Class.Console (log)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, writeTextFile)
-import Types (FormattedMarkdownData, FrontMatterS)
-import Utils (askConfig, md2FormattedData)
+import Types (AppM, FormattedMarkdownData, FrontMatterS, liftAppM)
+import Utils (md2FormattedData)
 import Utils as Utils
 
 feedItemTemplate ∷ String
@@ -26,19 +25,20 @@ feedItemTemplate =
 <pubDate>{{published_date}}</pubDate>
 </item>"""
 
-generateRSSFeed :: Array FrontMatterS -> Aff Unit
+generateRSSFeed :: Array FrontMatterS -> AppM Unit
 generateRSSFeed fds = do
-  config <- askConfig
-  templateContents <- readTextFile UTF8 (config.templateFolder <> "/feed.xml")
-  parsedContents <- parTraverse (\fm -> md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fm.slug <> ".md")) fds
-  case config.domain of
-    Nothing -> do
-      throwError $ error "Cannot generate RSS feed without a SITE_URL set in the environment. (e.g SITE_URL=https://my.blog)."
-    Just domain -> do
-      feedItemsString <- pure $ generateFeedItemString domain feedItemTemplate parsedContents
-      lastUpdated <- pure $ getLastUpdated (head fds)
-      updatedFeedContents <- pure $ replaceFeedContents feedItemsString lastUpdated templateContents
-      writeTextFile UTF8 (Utils.tmpFolder <> "/feed.xml") updatedFeedContents
+  config <- ask
+  liftAppM $ do
+    templateContents <- readTextFile UTF8 (config.templateFolder <> "/feed.xml")
+    parsedContents <- parTraverse (\fm -> md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fm.slug <> ".md")) fds
+    case config.domain of
+      Nothing -> do
+        throwError $ error "Cannot generate RSS feed without a SITE_URL set in the environment. (e.g SITE_URL=https://my.blog)."
+      Just domain -> do
+        feedItemsString <- pure $ generateFeedItemString domain feedItemTemplate parsedContents
+        lastUpdated <- pure $ getLastUpdated (head fds)
+        updatedFeedContents <- pure $ replaceFeedContents feedItemsString lastUpdated templateContents
+        writeTextFile UTF8 (Utils.tmpFolder <> "/feed.xml") updatedFeedContents
 
 generateFeedItemString :: String -> String -> Array FormattedMarkdownData -> String
 generateFeedItemString domain template = foldl fn ""
@@ -62,13 +62,6 @@ replaceFeedContents :: String -> String -> String -> String
 replaceFeedContents items lastUpdatedAt template =
   replaceAll (Pattern "{{last_updated_date}}") (Replacement lastUpdatedAt) template
     # replaceAll (Pattern "{{feed_items}}") (Replacement items)
-
-test ∷ Effect Unit
-test =
-  launchAff_
-    $ do
-        _ <- generateRSSFeed []
-        log "Done."
 
 formatTitle :: String -> String
 formatTitle str = replaceAll (Pattern "&") (Replacement "&amp;") str

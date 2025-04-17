@@ -60,8 +60,8 @@ md2FormattedData s =
 
 foreign import getCategoriesJson :: String -> Array Category
 
-askConfig :: forall m. (MonadEffect m) => m Config
-askConfig = liftEffect $ do
+getConfig :: forall m. (MonadEffect m) => m Config
+getConfig = liftEffect $ do
   templateFolder <- lookupEnv "TEMPLATE_DIR" >>= (pure <$> fromMaybe defaultTemplateFolder)
   outputFolder <- lookupEnv "OUTPUT_DIR" >>= (pure <$> fromMaybe defaultOutputFolder)
   contentFolder <- lookupEnv "POSTS_DIR" >>= (pure <$> fromMaybe defaultContentFolder)

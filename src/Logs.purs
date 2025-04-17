@@ -2,7 +2,6 @@ module Logs where
 
 import Prelude
 
-import Effect.Aff (Aff)
 import Effect.Class (class MonadEffect)
 import Effect.Class.Console (log)
 

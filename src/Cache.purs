@@ -2,6 +2,7 @@ module Cache where
 
 import Prelude
 
+import Control.Monad.Reader (ask)
 import Control.Parallel (parTraverse)
 import Data.Array (filter, mapMaybe)
 import Data.Either (Either(..), either, hush)
@@ -16,7 +17,8 @@ import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Path (FilePath)
-import Utils (askConfig)
+import Types (Config, AppM, liftAppM)
+import Utils (getConfig)
 
 -- createNewCacheLookup :: Array U.FormattedMarkdownData -> Aff Unit
 -- createNewCacheLookup fds = do
@@ -36,24 +38,24 @@ getStat contentsFolder filename = do
         Right s -> pure { filename, stat: s }
         Left _ -> pure { filename, stat: "" }
 
-getStatAll :: Array String -> Aff (Array { filename :: String, stat :: String })
-getStatAll filenames = do
-  config <- askConfig
+getStatAll :: Config -> Array String -> Aff (Array { filename :: String, stat :: String })
+getStatAll config filenames = do
   parTraverse (getStat config.contentFolder) filenames
 
-writeCacheData :: Aff Unit
+writeCacheData :: AppM Unit
 writeCacheData = do
   cacheData <- createCacheData
-  _ <- try $ writeTextFile UTF8 "./.cache" cacheData
+  _ <- liftAppM $ writeTextFile UTF8 "./.cache" cacheData
   pure unit
 
-createCacheData :: Aff String
+createCacheData :: AppM String
 createCacheData = do
-  config <- askConfig
-  contents <- try $ readdir config.contentFolder
-  unwrapped <- pure $ either (\_ -> []) (filter (contains (Pattern ".md"))) contents
-  stats <- getStatAll unwrapped
-  pure $ joinWith "\n" (map toString' stats)
+  config <- ask
+  liftAppM $ do
+    contents <- try $ readdir config.contentFolder
+    unwrapped <- pure $ either (\_ -> []) (filter (contains (Pattern ".md"))) contents
+    stats <- getStatAll config unwrapped
+    pure $ joinWith "\n" (map toString' stats)
   where
   toString' { filename, stat } = filename <> "::" <> stat
 
@@ -75,7 +77,7 @@ needsInvalidation cacheData filename = do
   case lookup filename cacheData of
     Nothing -> pure true
     Just x -> do
-      config <- askConfig
+      config <- getConfig
       cd <- getStat config.contentFolder filename
       pure $ cd.stat /= x
 -- test =

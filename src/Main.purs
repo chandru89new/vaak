@@ -4,7 +4,7 @@ import Prelude
 
 import Cache (CacheData, needsInvalidation, readCacheData)
 import Cache as Cache
-import Control.Monad.Except (ExceptT(..), runExceptT)
+import Control.Monad.Reader (ask)
 import Control.Parallel (parTraverse)
 import Data.Array (catMaybes, drop, filter, find, foldl, head, sortBy, take)
 import Data.Array as Array
@@ -16,7 +16,7 @@ import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Data.String (Pattern(..), Replacement(..), contains, joinWith, replaceAll, split)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff (Aff, Error, launchAff_, throwError, try)
+import Effect.Aff (Aff, launchAff_, throwError, try)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import Effect.Exception (error)
@@ -29,8 +29,8 @@ import Node.Process (argv, exit)
 import Prelude as Maybe
 import RssGenerator as Rss
 import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
-import Types (Category, Command(..), Config, FormattedMarkdownData, FrontMatterS, Status(..), Template(..))
-import Utils (archiveTemplate, askConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, md2FormattedData, newPostTemplate, tmpFolder)
+import Types (Category, Command(..), FormattedMarkdownData, FrontMatterS, Status(..), Template(..), AppM, liftAppM, runAppM)
+import Utils (archiveTemplate, getConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, md2FormattedData, newPostTemplate, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -40,14 +40,14 @@ main = do
     Help -> log $ helpText
     ShowVersion -> log $ "v0.8.0"
     Init -> launchAff_ $ do
-      config <- askConfig
-      res <- runExceptT initApp
+      config <- getConfig
+      res <- runAppM config initApp
       case res of
         Left err -> Logs.logError $ "Could not initialize the app: " <> show err
         Right _ -> Logs.logSuccess $ "Templates generated in " <> config.templateFolder <> ". You can edit them."
     NewPost slug -> launchAff_ $ do
-      config <- askConfig
-      res <- runExceptT $ createNewPost config slug
+      config <- getConfig
+      res <- runAppM config (createNewPost slug)
       case res of
         Left err -> do
           _ <- Logs.logError ("Could not create a new post: " <> show err)
@@ -58,9 +58,9 @@ main = do
       log $ helpText
       exit 1
     Build -> launchAff_ $ do
-      config <- askConfig
-      res <- runExceptT $ buildSite config
-      _ <- try $ liftEffect $ execSync ("rm -rf " <> tmpFolder) defaultExecSyncOptions
+      config <- getConfig
+      res <- runAppM config buildSite
+      _ <- liftEffect $ try $ execSync ("rm -rf " <> tmpFolder) defaultExecSyncOptions
       case res of
         Left err -> do
           Logs.logError $ "Error when building the site: " <> show err
@@ -77,42 +77,41 @@ helpText =
   new [slug] - create a new post.
 """
 
-buildSite :: Config -> ExceptT Error Aff Unit
-buildSite config =
-  ExceptT $ try
-    $ do
-        Logs.logInfo "Starting..."
-        _ <- createFolderIfNotPresent tmpFolder
-        postsMetadata <- generatePostsHTML
-        Logs.logSuccess $ "Posts page generated."
-        Logs.logInfo $ "Generating archive page..."
-        _ <- writeArchiveByYearPage postsMetadata
-        Logs.logSuccess $ "Archive page generated."
-        Logs.logInfo $ "Generating home page..."
-        _ <- createHomePage postsMetadata
-        Logs.logSuccess $ "Home page generated."
-        Logs.logInfo $ "Copying 404.html..."
-        _ <- liftEffect $ execSync ("cp " <> config.templateFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
-        Logs.logSuccess $ "404.html copied."
-        Logs.logInfo "Copying images folder..."
-        _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
-        Logs.logSuccess $ "images folder copied."
-        Logs.logInfo "Copying js folder..."
-        _ <- liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
-        Logs.logSuccess "js folder copied."
-        Logs.logInfo "Generating styles.css..."
-        _ <- generateStyles
-        Logs.logSuccess "styles.css generated."
-        Logs.logInfo "Generating RSS feed..."
-        _ <- Rss.generateRSSFeed (take 10 postsMetadata)
-        Logs.logSuccess "RSS feed generated."
-        Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
-        _ <- createFolderIfNotPresent config.outputFolder
-        _ <- liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder) defaultExecSyncOptions
-        Logs.logSuccess "Copied."
-        Logs.logInfo "Updating cache..."
-        _ <- Cache.writeCacheData
-        Logs.logSuccess "Cached updated."
+buildSite :: AppM Unit
+buildSite = do
+  config <- ask
+  liftAppM $ Logs.logInfo "Starting..."
+  liftAppM $ createFolderIfNotPresent tmpFolder
+  postsMetadata <- generatePostsHTML
+  liftAppM $ Logs.logSuccess $ "Posts page generated."
+  liftAppM $ Logs.logInfo $ "Generating archive page..."
+  _ <- writeArchiveByYearPage postsMetadata
+  liftAppM $ Logs.logSuccess $ "Archive page generated."
+  liftAppM $ Logs.logInfo $ "Generating home page..."
+  _ <- createHomePage postsMetadata
+  liftAppM $ Logs.logSuccess $ "Home page generated."
+  liftAppM $ Logs.logInfo $ "Copying 404.html..."
+  _ <- liftEffect $ execSync ("cp " <> config.templateFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
+  liftAppM $ Logs.logSuccess $ "404.html copied."
+  liftAppM $ Logs.logInfo "Copying images folder..."
+  _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
+  liftAppM $ Logs.logSuccess $ "images folder copied."
+  liftAppM $ Logs.logInfo "Copying js folder..."
+  _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
+  liftAppM $ Logs.logSuccess "js folder copied."
+  liftAppM $ Logs.logInfo "Generating styles.css..."
+  _ <- generateStyles
+  liftAppM $ Logs.logSuccess "styles.css generated."
+  liftAppM $ Logs.logInfo "Generating RSS feed..."
+  _ <- Rss.generateRSSFeed (take 10 postsMetadata)
+  liftAppM $ Logs.logSuccess "RSS feed generated."
+  liftAppM $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
+  _ <- liftAppM $ createFolderIfNotPresent config.outputFolder
+  _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder) defaultExecSyncOptions
+  liftAppM $ Logs.logSuccess "Copied."
+  liftAppM $ Logs.logInfo "Updating cache..."
+  _ <- Cache.writeCacheData
+  liftAppM $ Logs.logSuccess "Cached updated."
 
 mkCommand :: Array String -> Command
 mkCommand xs = case head (drop 2 xs) of
@@ -125,19 +124,19 @@ mkCommand xs = case head (drop 2 xs) of
     _ -> Invalid
   _ -> Invalid
 
-generatePostsHTML :: Aff (Array (FrontMatterS))
+generatePostsHTML :: AppM (Array (FrontMatterS))
 generatePostsHTML = do
-  config <- askConfig
-  cacheData <- readCacheData
+  config <- ask
   template <- readPostTemplate
-  mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
-  -- TODO: this is where we filter mdFiles to just the ones that need to be rebuilt because they have changed.
-  postsMetadata <- parTraverse (\f -> generatePostHTML (Template template) cacheData f) mdFiles
-  pure $ sortPosts $ filter (\d -> d.status == Published) postsMetadata
+  liftAppM $ do
+    cacheData <- readCacheData
+    mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
+    postsMetadata <- parTraverse (\f -> generatePostHTML (Template template) cacheData f) mdFiles
+    pure $ sortPosts $ filter (\d -> d.status == Published) postsMetadata
 
 generatePostHTML :: Template -> CacheData -> String -> Aff (FrontMatterS)
 generatePostHTML template cache fileName = do
-  config <- askConfig
+  config <- getConfig
   fd <- md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fileName)
   needsBuilding <- needsInvalidation cache fileName
   when needsBuilding $ do
@@ -159,18 +158,17 @@ replaceContentInTemplate (Template template) pd =
     # replaceAll (Pattern "{{date}}") (Replacement $ formatDate "MMM DD, YYYY" pd.frontMatter.date)
     # replaceAll (Pattern "{{page_title}}") (Replacement pd.frontMatter.title)
 
-readPostTemplate :: Aff String
+readPostTemplate :: AppM String
 readPostTemplate = do
-  config <- askConfig
-  readTextFile UTF8 config.blogPostTemplate
+  config <- ask
+  liftAppM $ readTextFile UTF8 config.blogPostTemplate
 
-generateStyles :: Aff Buffer
+generateStyles :: AppM Buffer
 generateStyles = do
-  config <- askConfig
-  liftEffect
-    $ do
-        _ <- execSync (copyStyleFileToTmp config) defaultExecSyncOptions
-        execSync command options
+  config <- ask
+  liftAppM $ liftEffect $ do
+    _ <- execSync (copyStyleFileToTmp config) defaultExecSyncOptions
+    execSync command options
   where
   options = defaultExecSyncOptions { cwd = Just tmpFolder }
   copyStyleFileToTmp config = "cp " <> config.templateFolder <> "/style.css " <> tmpFolder <> "/style1.css"
@@ -189,17 +187,18 @@ recentPosts n xs =
 
         fn b a = b <> "<li><a href=\"/" <> a.slug <> "\">" <> a.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.date <> "</span>" <> "</li>"
 
-createHomePage :: Array FrontMatterS -> Aff Unit
+createHomePage :: Array FrontMatterS -> AppM Unit
 createHomePage sortedArrayofPosts = do
-  config <- askConfig
-  recentsString <- pure $ recentPosts config.totalRecentPosts sortedArrayofPosts
-  template <- readTextFile UTF8 (homepageTemplate config.templateFolder)
-  categories <- pure $ (getCategoriesJson config.contentFolder # convertCategoriesToString)
-  contents <-
-    pure
-      $ replaceAll (Pattern "{{recent_posts}}") (Replacement recentsString) template
-          # replaceAll (Pattern "{{posts_by_categories}}") (Replacement categories)
-  writeTextFile UTF8 (tmpFolder <> "/index.html") contents
+  config <- ask
+  liftAppM $ do
+    recentsString <- pure $ recentPosts config.totalRecentPosts sortedArrayofPosts
+    template <- readTextFile UTF8 (homepageTemplate config.templateFolder)
+    categories <- pure $ (getCategoriesJson config.contentFolder # convertCategoriesToString)
+    contents <-
+      pure
+        $ replaceAll (Pattern "{{recent_posts}}") (Replacement recentsString) template
+            # replaceAll (Pattern "{{posts_by_categories}}") (Replacement categories)
+    writeTextFile UTF8 (tmpFolder <> "/index.html") contents
   where
   convertCategoriesToString :: Array Category -> String
   convertCategoriesToString = foldl fn ""
@@ -264,29 +263,30 @@ groupedPostsToHTML groupedPosts =
   in
     result
 
-writeArchiveByYearPage :: Array (FrontMatterS) -> Aff Unit
+writeArchiveByYearPage :: Array (FrontMatterS) -> AppM Unit
 writeArchiveByYearPage fds = do
-  config <- askConfig
-  contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds
-  templateContents <- readTextFile UTF8 $ archiveTemplate config.templateFolder
-  replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
-  writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
+  config <- ask
+  liftAppM $ do
+    contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds
+    templateContents <- readTextFile UTF8 $ archiveTemplate config.templateFolder
+    replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
+    writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
 
-createNewPost :: Config -> String -> ExceptT Error Aff Unit
-createNewPost config slug =
-  ExceptT $ try
-    $ do
-        newPostTemplateContents <- readTextFile UTF8 (newPostTemplate config.templateFolder)
-        today <- pure $ formatDate "YYYY-MM-DD" ""
-        replaced <-
-          pure
-            $ replaceAll (Pattern "$date") (Replacement today) newPostTemplateContents
-                # replaceAll (Pattern "$slug") (Replacement slug)
-        writeTextFile UTF8 (config.contentFolder <> "/" <> slug <> ".md") replaced
+createNewPost :: String -> AppM Unit
+createNewPost slug = do
+  config <- ask
+  liftAppM $ do
+    newPostTemplateContents <- readTextFile UTF8 (newPostTemplate config.templateFolder)
+    today <- pure $ formatDate "YYYY-MM-DD" ""
+    replaced <-
+      pure
+        $ replaceAll (Pattern "$date") (Replacement today) newPostTemplateContents
+            # replaceAll (Pattern "$slug") (Replacement slug)
+    writeTextFile UTF8 (config.contentFolder <> "/" <> slug <> ".md") replaced
 
-initApp :: ExceptT Error Aff Unit
-initApp = ExceptT $ try $ do
-  config <- askConfig
+initApp :: AppM Unit
+initApp = liftAppM $ do
+  config <- getConfig
   createFolderIfNotPresent config.templateFolder
   createFolderIfNotPresent config.contentFolder
   createFolderIfNotPresent "images"
