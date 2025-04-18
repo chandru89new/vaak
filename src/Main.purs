@@ -29,8 +29,8 @@ import Node.Process (argv, exit)
 import Prelude as Maybe
 import RssGenerator as Rss
 import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
-import Types (Category, Command(..), FormattedMarkdownData, FrontMatterS, Status(..), Template(..), AppM, liftAppM, runAppM)
-import Utils (archiveTemplate, getConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate, md2FormattedData, newPostTemplate, tmpFolder)
+import Types (AppM, Category, Command(..), FormattedMarkdownData, FrontMatterS, Status(..), Template(..), Config)
+import Utils (archiveTemplate, getConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate,liftAppM, md2FormattedData, newPostTemplate, tmpFolder, runAppM)
 
 main :: Effect Unit
 main = do
@@ -131,12 +131,11 @@ generatePostsHTML = do
   liftAppM $ do
     cacheData <- readCacheData
     mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
-    postsMetadata <- parTraverse (\f -> generatePostHTML (Template template) cacheData f) mdFiles
+    postsMetadata <- parTraverse (\f -> generatePostHTML config (Template template) cacheData f) mdFiles
     pure $ sortPosts $ filter (\d -> d.status == Published) postsMetadata
 
-generatePostHTML :: Template -> CacheData -> String -> Aff (FrontMatterS)
-generatePostHTML template cache fileName = do
-  config <- getConfig
+generatePostHTML :: Config -> Template -> CacheData -> String -> Aff (FrontMatterS)
+generatePostHTML config template cache fileName = do
   fd <- md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fileName)
   needsBuilding <- needsInvalidation cache fileName
   when needsBuilding $ do
@@ -285,25 +284,26 @@ createNewPost slug = do
     writeTextFile UTF8 (config.contentFolder <> "/" <> slug <> ".md") replaced
 
 initApp :: AppM Unit
-initApp = liftAppM $ do
-  config <- getConfig
-  createFolderIfNotPresent config.templateFolder
-  createFolderIfNotPresent config.contentFolder
-  createFolderIfNotPresent "images"
-  createFolderIfNotPresent "js"
-  Logs.logInfo "Generating index.html..."
-  writeTextFile UTF8 (config.templateFolder <> "/index.html") indexHtmlTemplate
-  Logs.logInfo "Generating post.html..."
-  writeTextFile UTF8 (config.templateFolder <> "/post.html") postHtmlTemplate
-  Logs.logInfo "Generating style.css..."
-  writeTextFile UTF8 (config.templateFolder <> "/style.css") styleTemplate
-  Logs.logInfo "Generating feed.xml..."
-  when (isNothing config.domain) $ Logs.logWarning "feed.xml template is missing domain because you have not set SITE_URL in the environment. Manually edit the feed.xml file to add the correct domain. When building the site, you will need to set the domain in your shell enviroment. (e.g SITE_URL=https://my.blog)"
-  writeTextFile UTF8 (config.templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "https://my.blog" config.domain))
-  Logs.logInfo "Generating archive.html..."
-  writeTextFile UTF8 (config.templateFolder <> "/archive.html") archiveHtmlTemplate
-  Logs.logInfo "Generating 404.html..."
-  writeTextFile UTF8 (config.templateFolder <> "/404.html") notFoundTemplate
-  Logs.logInfo "Generating new post markdown template..."
-  writeTextFile UTF8 (config.templateFolder <> "/post.md") postMdTemplate
-  Logs.logSuccess "Done! You can now edit these templates. Just retain the handlebars."
+initApp = do
+  config <- ask
+  liftAppM $ do
+    createFolderIfNotPresent config.templateFolder
+    createFolderIfNotPresent config.contentFolder
+    createFolderIfNotPresent "images"
+    createFolderIfNotPresent "js"
+    Logs.logInfo "Generating index.html..."
+    writeTextFile UTF8 (config.templateFolder <> "/index.html") indexHtmlTemplate
+    Logs.logInfo "Generating post.html..."
+    writeTextFile UTF8 (config.templateFolder <> "/post.html") postHtmlTemplate
+    Logs.logInfo "Generating style.css..."
+    writeTextFile UTF8 (config.templateFolder <> "/style.css") styleTemplate
+    Logs.logInfo "Generating feed.xml..."
+    when (isNothing config.domain) $ Logs.logWarning "feed.xml template is missing domain because you have not set SITE_URL in the environment. Manually edit the feed.xml file to add the correct domain. When building the site, you will need to set the domain in your shell enviroment. (e.g SITE_URL=https://my.blog)"
+    writeTextFile UTF8 (config.templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "https://my.blog" config.domain))
+    Logs.logInfo "Generating archive.html..."
+    writeTextFile UTF8 (config.templateFolder <> "/archive.html") archiveHtmlTemplate
+    Logs.logInfo "Generating 404.html..."
+    writeTextFile UTF8 (config.templateFolder <> "/404.html") notFoundTemplate
+    Logs.logInfo "Generating new post markdown template..."
+    writeTextFile UTF8 (config.templateFolder <> "/post.md") postMdTemplate
+    Logs.logSuccess "Done! You can now edit these templates. Just retain the handlebars."

@@ -11,8 +11,8 @@ import Effect.Aff (throwError)
 import Effect.Exception (error)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, writeTextFile)
-import Types (AppM, FormattedMarkdownData, FrontMatterS, liftAppM)
-import Utils (md2FormattedData)
+import Types (AppM, FormattedMarkdownData, FrontMatterS)
+import Utils (liftAppM, md2FormattedData)
 import Utils as Utils
 
 feedItemTemplate ∷ String

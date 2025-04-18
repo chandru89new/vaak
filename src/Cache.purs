@@ -17,8 +17,8 @@ import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Path (FilePath)
-import Types (Config, AppM, liftAppM)
-import Utils (getConfig)
+import Types (Config, AppM)
+import Utils (getConfig, liftAppM)
 
 -- createNewCacheLookup :: Array U.FormattedMarkdownData -> Aff Unit
 -- createNewCacheLookup fds = do

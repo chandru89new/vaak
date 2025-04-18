@@ -2,18 +2,20 @@ module Utils where
 
 import Prelude
 
+import Control.Monad.Except (ExceptT(..), runExceptT)
+import Control.Monad.Reader (ReaderT(..), runReaderT)
 import Data.Array (last)
 import Data.Either (Either(..))
 import Data.Int (fromString)
 import Data.Maybe (Maybe, fromMaybe)
 import Data.String (take, length, toLower)
 import Data.String.CodeUnits (toCharArray)
-import Effect.Aff (Aff, try)
+import Effect.Aff (Aff, Error, try)
 import Effect.Class (class MonadEffect, liftEffect)
 import Node.FS.Aff (mkdir, readdir)
 import Node.Path (FilePath)
 import Node.Process (lookupEnv)
-import Types (Category, Config, FormattedMarkdownData, RawFormattedMarkdownData, Status(..))
+import Types (Category, Config, FormattedMarkdownData, RawFormattedMarkdownData, Status(..), AppM)
 
 defaultTemplateFolder :: String
 defaultTemplateFolder = "./templates"
@@ -91,3 +93,10 @@ endsWith ch str =
 dropLeadingSlash :: String -> String
 dropLeadingSlash str =
   if endsWith '/' str then take (length str - 1) str else str
+
+
+runAppM :: forall a. Config -> AppM a -> Aff (Either Error a)
+runAppM config app = runExceptT $ runReaderT app config
+
+liftAppM :: forall a. Aff a -> AppM a
+liftAppM aff = ReaderT \_ -> ExceptT $ try $ aff

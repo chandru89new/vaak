@@ -52,12 +52,12 @@ instance showStatus :: Show Status where
   show Published = "Published"
   show (InvalidStatus s) = "InvalidStatus" <> show s
 
-type Config = 
+type Config =
   { templateFolder :: String
   , outputFolder :: String
   , contentFolder :: String
   , blogPostTemplate :: String
-  , totalRecentPosts :: Int 
+  , totalRecentPosts :: Int
   , domain :: Maybe String
   }
 
@@ -80,11 +80,4 @@ instance showCommand :: Show Command where
   show Invalid = "Invalid"
   show ShowVersion = "ShowVersion"
 
-
 type AppM a = ReaderT Config (ExceptT Error Aff) a
-
-runAppM :: forall a. Config -> AppM a -> Aff (Either Error a)
-runAppM config app = runExceptT $ runReaderT app config
-
-liftAppM :: forall a. Aff a -> AppM a
-liftAppM aff = ReaderT \_ -> ExceptT $ try $ aff
