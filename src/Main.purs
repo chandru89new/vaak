@@ -4,8 +4,9 @@ import Prelude
 
 import Cache (CacheData, needsInvalidation, readCacheData)
 import Cache as Cache
-import Control.Monad.Reader (ask)
-import Control.Parallel (parTraverse)
+import Control.Monad.Except (ExceptT(..))
+import Control.Monad.Reader (ask, lift)
+import Control.Parallel (parTraverse, parTraverse_)
 import Data.Array (catMaybes, drop, filter, find, foldl, head, sortBy, take)
 import Data.Array as Array
 import Data.Either (Either(..))
@@ -19,7 +20,8 @@ import Effect (Effect)
 import Effect.Aff (Aff, launchAff_, throwError, try)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
-import Effect.Exception (error)
+import Effect.Console (logShow)
+import Effect.Exception (Error, error)
 import Logs as Logs
 import Node.Buffer (Buffer)
 import Node.ChildProcess (defaultExecSyncOptions, execSync)
@@ -29,14 +31,15 @@ import Node.Process (argv, exit)
 import Prelude as Maybe
 import RssGenerator as Rss
 import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
-import Types (AppM, Category, Command(..), FormattedMarkdownData, FrontMatterS, Status(..), Template(..), Config)
-import Utils (archiveTemplate, getConfig, createFolderIfNotPresent, formatDate, getCategoriesJson, homepageTemplate,liftAppM, md2FormattedData, newPostTemplate, tmpFolder, runAppM)
+import Types (AppM, Category, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
+import Utils (archiveTemplate, createFolderIfNotPresent, formatDate, getCategoriesJson, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, runAppM, tmpFolder)
 
 main :: Effect Unit
 main = do
   args <- argv
   cmd <- pure $ mkCommand args
   case cmd of
+    Test -> test
     Help -> log $ helpText
     ShowVersion -> log $ "v0.8.2"
     Init -> launchAff_ $ do
@@ -82,13 +85,13 @@ buildSite = do
   config <- ask
   liftAppM $ Logs.logInfo "Starting..."
   liftAppM $ createFolderIfNotPresent tmpFolder
-  postsMetadata <- generatePostsHTML
+  { published, draft } <- generatePostsHTML
   liftAppM $ Logs.logSuccess $ "Posts page generated."
   liftAppM $ Logs.logInfo $ "Generating archive page..."
-  _ <- writeArchiveByYearPage postsMetadata
+  _ <- writeArchiveByYearPage published
   liftAppM $ Logs.logSuccess $ "Archive page generated."
   liftAppM $ Logs.logInfo $ "Generating home page..."
-  _ <- createHomePage postsMetadata
+  _ <- createHomePage published
   liftAppM $ Logs.logSuccess $ "Home page generated."
   liftAppM $ Logs.logInfo $ "Copying 404.html..."
   _ <- liftEffect $ execSync ("cp " <> config.templateFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
@@ -103,9 +106,10 @@ buildSite = do
   _ <- generateStyles
   liftAppM $ Logs.logSuccess "styles.css generated."
   liftAppM $ Logs.logInfo "Generating RSS feed..."
-  _ <- Rss.generateRSSFeed (take 10 postsMetadata)
+  _ <- Rss.generateRSSFeed (take 10 published)
   liftAppM $ Logs.logSuccess "RSS feed generated."
   liftAppM $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
+  _ <- removeDraftsFromOutput draft
   _ <- liftAppM $ createFolderIfNotPresent config.outputFolder
   _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder) defaultExecSyncOptions
   liftAppM $ Logs.logSuccess "Copied."
@@ -115,6 +119,7 @@ buildSite = do
 
 mkCommand :: Array String -> Command
 mkCommand xs = case head (drop 2 xs) of
+  Just "test" -> Test
   Just "version" -> ShowVersion
   Just "help" -> Help
   Just "init" -> Init
@@ -124,7 +129,7 @@ mkCommand xs = case head (drop 2 xs) of
     _ -> Invalid
   _ -> Invalid
 
-generatePostsHTML :: AppM (Array (FrontMatterS))
+generatePostsHTML :: AppM ({ published :: Array (FrontMatterS), draft :: Array (FrontMatterS) })
 generatePostsHTML = do
   config <- ask
   template <- readPostTemplate
@@ -132,7 +137,7 @@ generatePostsHTML = do
     cacheData <- readCacheData
     mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
     postsMetadata <- parTraverse (\f -> generatePostHTML config (Template template) cacheData f) mdFiles
-    pure $ sortPosts $ filter (\d -> d.status == Published) postsMetadata
+    pure $ { published : sortPosts $ filter (\d -> d.status == Published) postsMetadata, draft : sortPosts $ filter (\d -> d.status == Draft) postsMetadata }
 
 generatePostHTML :: Config -> Template -> CacheData -> String -> Aff (FrontMatterS)
 generatePostHTML config template cache fileName = do
@@ -307,3 +312,25 @@ initApp = do
     Logs.logInfo "Generating new post markdown template..."
     writeTextFile UTF8 (config.templateFolder <> "/post.md") postMdTemplate
     Logs.logSuccess "Done! You can now edit these templates. Just retain the handlebars."
+
+removeDraftsFromOutput :: Array FrontMatterS -> AppM Unit
+removeDraftsFromOutput drafts = do
+  config <- ask
+  liftAppM $ parTraverse_ (removeDraftHtml config.outputFolder) drafts
+  where
+  removeDraftHtml :: String -> FrontMatterS -> Aff Unit
+  removeDraftHtml folder draftItem = do
+    _ <- try $ liftEffect $ execSync ("rm " <> folder <> "/" <> draftItem.slug <> ".html") defaultExecSyncOptions
+    pure unit
+
+test :: Effect Unit
+test = launchAff_ $ do
+  config <- getConfig
+  res <- runAppM config $ do 
+    lift $ ExceptT $ do
+      testAff
+  liftEffect $ logShow res
+
+testAff :: Aff (Either Error Unit)
+testAff = do
+  throwError $ error "test error"

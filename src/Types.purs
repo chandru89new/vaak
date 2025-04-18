@@ -2,7 +2,7 @@ module Types where
 
 import Prelude
 
-import Control.Monad.Except (ExceptT(..), runExceptT)
+import Control.Monad.Except (ExceptT(..), lift, runExceptT)
 import Control.Monad.Reader (ReaderT(..), runReaderT)
 import Data.Either (Either)
 import Data.Maybe (Maybe)
@@ -71,9 +71,11 @@ data Command
   | NewPost String
   | Init
   | Invalid
+  | Test
 
 instance showCommand :: Show Command where
   show Build = "Build"
+  show Test = "Test"
   show Init = "Init"
   show Help = "Help"
   show (NewPost _) = "NewPost"
