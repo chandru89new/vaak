@@ -38,7 +38,7 @@ main = do
   cmd <- pure $ mkCommand args
   case cmd of
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.8.1"
+    ShowVersion -> log $ "v0.8.2"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
