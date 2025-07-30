@@ -80,6 +80,7 @@ defaultTotalRecentPosts = 5
 stringToStatus :: String -> Status
 stringToStatus s = case toLower s of
   "draft" -> Draft
+  "unlisted" -> Unlisted
   "published" -> Published
   _ -> InvalidStatus s
 
