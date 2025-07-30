@@ -57,7 +57,7 @@ Posts should be written in Markdown with front matter. Example:
 ---
 title: "My First Post" (use quotes for safety)
 date: 2025-04-14 (always YYYY-MM-DD format)
-status: published -- can be "draft" or "published". "draft" wont be generated in the build.
+status: published -- can be "draft", "published" or "unlisted". "draft" wont be generated in the build. "unlisted" wont be added to the homepage, archive page or the RSS feeds but can be accessed by the URL/slug.
 slug: my-first-post
 ---
 
