@@ -41,7 +41,7 @@ main = do
   case cmd of
     Test -> test
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.8.3"
+    ShowVersion -> log $ "v0.8.4"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
@@ -129,7 +129,7 @@ mkCommand xs = case head (drop 2 xs) of
     _ -> Invalid
   _ -> Invalid
 
-generatePostsHTML :: AppM ({ published :: Array (FrontMatterS), draft :: Array (FrontMatterS) })
+generatePostsHTML :: AppM ({ published :: Array (FrontMatterS), draft :: Array (FrontMatterS), unlisted :: Array (FrontMatterS) })
 generatePostsHTML = do
   config <- ask
   template <- readPostTemplate
@@ -137,7 +137,7 @@ generatePostsHTML = do
     cacheData <- readCacheData
     mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
     postsMetadata <- parTraverse (\f -> generatePostHTML config (Template template) cacheData f) mdFiles
-    pure $ { published : sortPosts $ filter (\d -> d.status == Published) postsMetadata, draft : sortPosts $ filter (\d -> d.status == Draft) postsMetadata }
+    pure $ { published: sortPosts $ filter (\d -> d.status == Published) postsMetadata, draft: sortPosts $ filter (\d -> d.status == Draft) postsMetadata, unlisted: sortPosts $ filter (\d -> d.status == Unlisted) postsMetadata }
 
 generatePostHTML :: Config -> Template -> CacheData -> String -> Aff (FrontMatterS)
 generatePostHTML config template cache fileName = do
@@ -148,6 +148,11 @@ generatePostHTML config template cache fileName = do
       Draft -> pure unit
       InvalidStatus s -> do
         throwError $ error $ "Invalid status '" <> s <> "' in '" <> fileName <> "'."
+      Unlisted -> do
+        res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") (replaceContentInTemplate template fd)
+        case res of
+          Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
+          Right _ -> Logs.logSuccess $ "Wrote: " <> config.contentFolder <> "/" <> fileName <> " -> " <> tmpFolder <> "/" <> fd.frontMatter.slug <> ".html"
       Published -> do
         res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") (replaceContentInTemplate template fd)
         case res of
@@ -326,7 +331,7 @@ removeDraftsFromOutput drafts = do
 test :: Effect Unit
 test = launchAff_ $ do
   config <- getConfig
-  res <- runAppM config $ do 
+  res <- runAppM config $ do
     lift $ ExceptT $ do
       testAff
   liftEffect $ logShow res

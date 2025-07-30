@@ -2,11 +2,10 @@ module Types where
 
 import Prelude
 
-import Control.Monad.Except (ExceptT(..), lift, runExceptT)
-import Control.Monad.Reader (ReaderT(..), runReaderT)
-import Data.Either (Either)
+import Control.Monad.Except (ExceptT)
+import Control.Monad.Reader (ReaderT)
 import Data.Maybe (Maybe)
-import Effect.Aff (Aff, try)
+import Effect.Aff (Aff)
 import Effect.Exception (Error)
 
 -- Types from Utils.purs
@@ -41,6 +40,7 @@ type Category =
 data Status
   = Draft
   | Published
+  | Unlisted
   | InvalidStatus String
 
 -- Derive instances for Status
@@ -50,6 +50,7 @@ derive instance ordStatus :: Ord Status
 instance showStatus :: Show Status where
   show Draft = "Draft"
   show Published = "Published"
+  show Unlisted = "Unlisted"
   show (InvalidStatus s) = "InvalidStatus" <> show s
 
 type Config =
