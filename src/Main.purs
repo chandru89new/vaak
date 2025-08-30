@@ -147,7 +147,7 @@ generatePostHTML config template cache fileName = do
     case fd.frontMatter.status of
       Draft -> pure unit
       InvalidStatus s -> do
-        throwError $ error $ "Invalid status '" <> s <> "' in '" <> fileName <> "'."
+        throwError $ error $ "Invalid status '" <> s <> "' in '" <> fileName <> "'. Status can be 'draft', 'published' or 'unlisted'."
       Unlisted -> do
         res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") (replaceContentInTemplate template fd)
         case res of
