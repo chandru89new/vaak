@@ -28,7 +28,6 @@ import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Process (argv, exit)
-import Prelude as Maybe
 import RssGenerator as Rss
 import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Category, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
@@ -249,7 +248,7 @@ groupPostsByYear posts = foldl foldFn Map.empty posts
   extractYear dateString =
     split (Pattern "-") dateString
       # Array.head
-      # Maybe.map (fromString)
+      # map (fromString)
       # join
 
 groupedPostsToHTML :: Map Int (Array FrontMatterS) -> String
