@@ -3,11 +3,18 @@ import dayjs from "dayjs";
 import MarkdownIt from "markdown-it";
 import yaml from "js-yaml";
 import fs from "fs";
+import markdownItAnchor from "markdown-it-anchor";
 
 const formatDate = (format) => (dateString) =>
   !!dateString ? dayjs(dateString).format(format) : dayjs().format(format);
 
-const md2FormattedDataService = new MarkdownIt({ html: true });
+const md2FormattedDataService = new MarkdownIt({ html: true }).use(
+  markdownItAnchor,
+  {
+    permalink: markdownItAnchor.permalink["headerLink"]()
+  }
+);
+
 const md2RawFormattedData = (string) => {
   const r = matter(string);
   return {
@@ -24,7 +31,7 @@ const md2RawFormattedData = (string) => {
 
 const getCategoriesJson = (postsDir) => {
   try {
-    return yaml.load(fs.readFileSync(`./${postsDir}/categories.yml`, 'utf-8'));
+    return yaml.load(fs.readFileSync(`./${postsDir}/categories.yml`, "utf-8"));
   } catch {
     return [];
   }
