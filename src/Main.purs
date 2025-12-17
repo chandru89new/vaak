@@ -32,7 +32,7 @@ import RssGenerator as Rss
 import Handlebars (CompiledTemplate, compileTemplate, renderTemplate)
 import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
-import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
+import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -106,7 +106,7 @@ buildSite = do
   { published, draft } <- generatePostsHTML templates.post
   liftAppM $ Logs.logSuccess $ "Posts page generated."
   liftAppM $ Logs.logInfo $ "Generating archive page..."
-  _ <- writeArchiveByYearPage published
+  _ <- writeArchiveByYearPage templates.archive published
   liftAppM $ Logs.logSuccess $ "Archive page generated."
   liftAppM $ Logs.logInfo $ "Generating home page..."
   _ <- createHomePage templates.index published
@@ -239,6 +239,14 @@ groupPostsByYear posts = foldl foldFn Map.empty posts
       # map (fromString)
       # join
 
+groupPostsByYearArray :: Array FrontMatterS -> Array { year :: Int, posts :: Array FrontMatterS }
+groupPostsByYearArray posts =
+  let
+    grouped = groupPostsByYear posts
+    asList = Map.toUnfoldable grouped # sortBy (\(Tuple a1 _) (Tuple a2 _) -> if a1 > a2 then LT else GT)
+  in
+    map (\(Tuple year ps) -> { year, posts: ps }) asList
+
 groupedPostsToHTML :: Map Int (Array FrontMatterS) -> String
 groupedPostsToHTML groupedPosts =
   let
@@ -259,14 +267,14 @@ groupedPostsToHTML groupedPosts =
   in
     result
 
-writeArchiveByYearPage :: Array (FrontMatterS) -> AppM Unit
-writeArchiveByYearPage fds = do
+writeArchiveByYearPage :: CompiledTemplate -> Array (FrontMatterS) -> AppM Unit
+writeArchiveByYearPage template fds = do
   config <- ask
   liftAppM $ do
-    contentToWrite <- pure $ groupedPostsToHTML $ groupPostsByYear fds
-    templateContents <- readTextFile UTF8 $ archiveTemplate config.templateFolder
-    replacedContent <- pure $ replaceAll (Pattern "{{content}}") (Replacement contentToWrite) templateContents
-    writeTextFile UTF8 (tmpFolder <> "/archive.html") replacedContent
+    let groupedPosts = groupPostsByYearArray fds
+    let context = prepareArchiveContext formatDate groupedPosts (fromMaybe "" config.domain)
+    let html = renderTemplate template context
+    writeTextFile UTF8 (tmpFolder <> "/archive.html") html
 
 createNewPost :: String -> AppM Unit
 createNewPost slug = do
