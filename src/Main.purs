@@ -7,7 +7,7 @@ import Cache as Cache
 import Control.Monad.Except (ExceptT(..))
 import Control.Monad.Reader (ask, lift)
 import Control.Parallel (parTraverse, parTraverse_)
-import Data.Array (catMaybes, drop, filter, find, foldl, head, sortBy, take)
+import Data.Array (drop, filter, foldl, head, sortBy, take)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Int (fromString)
@@ -31,8 +31,8 @@ import Node.Process (argv, exit)
 import RssGenerator as Rss
 import Handlebars (CompiledTemplate, compileTemplate, renderTemplate)
 import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
-import Types (AppM, Category, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
-import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getCategoriesJson, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, preparePostContext, runAppM, tmpFolder)
+import Types (AppM, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
+import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -109,7 +109,7 @@ buildSite = do
   _ <- writeArchiveByYearPage published
   liftAppM $ Logs.logSuccess $ "Archive page generated."
   liftAppM $ Logs.logInfo $ "Generating home page..."
-  _ <- createHomePage published
+  _ <- createHomePage templates.index published
   liftAppM $ Logs.logSuccess $ "Home page generated."
   liftAppM $ Logs.logInfo $ "Copying 404.html..."
   _ <- liftEffect $ execSync ("cp " <> config.templateFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
@@ -208,38 +208,13 @@ recentPosts n xs =
 
         fn b a = b <> "<li><a href=\"/" <> a.slug <> "\">" <> a.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.date <> "</span>" <> "</li>"
 
-createHomePage :: Array FrontMatterS -> AppM Unit
-createHomePage sortedArrayofPosts = do
+createHomePage :: CompiledTemplate -> Array FrontMatterS -> AppM Unit
+createHomePage template sortedArrayofPosts = do
   config <- ask
   liftAppM $ do
-    recentsString <- pure $ recentPosts config.totalRecentPosts sortedArrayofPosts
-    template <- readTextFile UTF8 (homepageTemplate config.templateFolder)
-    categories <- pure $ (getCategoriesJson config.contentFolder # convertCategoriesToString)
-    contents <-
-      pure
-        $ replaceAll (Pattern "{{recent_posts}}") (Replacement recentsString) template
-            # replaceAll (Pattern "{{posts_by_categories}}") (Replacement categories)
-    writeTextFile UTF8 (tmpFolder <> "/index.html") contents
-  where
-  convertCategoriesToString :: Array Category -> String
-  convertCategoriesToString = foldl fn ""
-
-  fn b a = b <> "<section><h3 class=\"category\">" <> a.category <> "</h3>" <> "<ul>" <> renderPosts a.posts <> "</ul></section>"
-
-  renderPosts :: Array String -> String
-  renderPosts posts = foldl fn2 "" (filteredPosts posts)
-
-  filteredPosts :: Array String -> Array FrontMatterS
-  filteredPosts xs =
-    map
-      ( \x ->
-          find (\p -> p.slug == x) sortedArrayofPosts
-      )
-      xs
-      # catMaybes
-      # sortPosts
-
-  fn2 b a = b <> "<li><a href=\"./" <> a.slug <> "\">" <> a.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.date <> "</span></li>"
+    let context = prepareIndexContext formatDate sortedArrayofPosts (fromMaybe "" config.domain)
+    let html = renderTemplate template context
+    writeTextFile UTF8 (tmpFolder <> "/index.html") html
 
 sortPosts :: Array FrontMatterS -> Array FrontMatterS
 sortPosts = sortBy (\a b -> if a.date < b.date then GT else LT)
