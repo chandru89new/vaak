@@ -37,4 +37,49 @@ const getCategoriesJson = (postsDir) => {
   }
 };
 
-export { md2RawFormattedData, formatDate, getCategoriesJson };
+// Prepare context for post.hbs template
+const preparePostContext = (formatFn) => (frontMatter) => (content) => (siteUrl) => ({
+  title: frontMatter.title,
+  date: formatFn("MMM DD, YYYY")(frontMatter.date),
+  slug: frontMatter.slug,
+  content: content,
+  siteUrl: siteUrl || ""
+});
+
+// Prepare context for index.hbs template
+const prepareIndexContext = (formatFn) => (allPosts) => (siteUrl) => ({
+  allPosts: allPosts.map(post => ({
+    title: post.title,
+    date: formatFn("MMM DD, YYYY")(post.date),
+    slug: post.slug
+  })),
+  siteUrl: siteUrl || ""
+});
+
+// Prepare context for archive.hbs template
+const prepareArchiveContext = (formatFn) => (groupedPosts) => (siteUrl) => ({
+  postsByYear: groupedPosts.map(group => ({
+    year: group.year,
+    posts: group.posts.map(post => ({
+      title: post.title,
+      date: formatFn("MMM DD, YYYY")(post.date),
+      slug: post.slug
+    }))
+  })),
+  siteUrl: siteUrl || ""
+});
+
+// Prepare context for 404.hbs template
+const prepare404Context = (siteUrl) => ({
+  siteUrl: siteUrl || ""
+});
+
+export {
+  md2RawFormattedData,
+  formatDate,
+  getCategoriesJson,
+  preparePostContext,
+  prepareIndexContext,
+  prepareArchiveContext,
+  prepare404Context
+};
