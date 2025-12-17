@@ -32,7 +32,7 @@ import RssGenerator as Rss
 import Handlebars (CompiledTemplate, compileTemplate, renderTemplate)
 import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Category, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
-import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getCategoriesJson, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, runAppM, tmpFolder)
+import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getCategoriesJson, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, preparePostContext, runAppM, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -149,12 +149,13 @@ generatePostsHTML = do
   config <- ask
   template <- readPostTemplate
   liftAppM $ do
+    let compiledTemplate = compileTemplate template
     cacheData <- readCacheData
     mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
-    postsMetadata <- parTraverse (\f -> generatePostHTML config (Template template) cacheData f) mdFiles
+    postsMetadata <- parTraverse (\f -> generatePostHTML config compiledTemplate cacheData f) mdFiles
     pure $ { published: sortPosts $ filter (\d -> d.status == Published) postsMetadata, draft: sortPosts $ filter (\d -> d.status == Draft) postsMetadata, unlisted: sortPosts $ filter (\d -> d.status == Unlisted) postsMetadata }
 
-generatePostHTML :: Config -> Template -> CacheData -> String -> Aff (FrontMatterS)
+generatePostHTML :: Config -> CompiledTemplate -> CacheData -> String -> Aff (FrontMatterS)
 generatePostHTML config template cache fileName = do
   fd <- md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fileName)
   needsBuilding <- needsInvalidation cache fileName
@@ -163,17 +164,17 @@ generatePostHTML config template cache fileName = do
       Draft -> pure unit
       InvalidStatus s -> do
         throwError $ error $ "Invalid status '" <> s <> "' in '" <> fileName <> "'. Status can be 'draft', 'published' or 'unlisted'."
-      Unlisted -> do
-        res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") (replaceContentInTemplate template fd)
-        case res of
-          Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
-          Right _ -> Logs.logSuccess $ "Wrote: " <> config.contentFolder <> "/" <> fileName <> " -> " <> tmpFolder <> "/" <> fd.frontMatter.slug <> ".html"
-      Published -> do
-        res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") (replaceContentInTemplate template fd)
-        case res of
-          Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
-          Right _ -> Logs.logSuccess $ "Wrote: " <> config.contentFolder <> "/" <> fileName <> " -> " <> tmpFolder <> "/" <> fd.frontMatter.slug <> ".html"
+      Unlisted -> writePost fd
+      Published -> writePost fd
   pure fd.frontMatter
+  where
+  writePost fd = do
+    let context = preparePostContext formatDate fd.frontMatter fd.content (fromMaybe "" config.domain)
+    let html = renderTemplate template context
+    res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") html
+    case res of
+      Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
+      Right _ -> Logs.logSuccess $ "Wrote: " <> config.contentFolder <> "/" <> fileName <> " -> " <> tmpFolder <> "/" <> fd.frontMatter.slug <> ".html"
 
 replaceContentInTemplate :: Template -> FormattedMarkdownData -> String
 replaceContentInTemplate (Template template) pd =
