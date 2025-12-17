@@ -41,7 +41,7 @@ vāk provides several commands to manage your static blog:
 ```
 your-blog/
 ├── posts/          # Your markdown posts
-├── templates/      # Handlebars templates (.hbs files - created by `vaak.cjs init`)
+├── templates/      # Nunjucks templates (.html files - created by `vaak.cjs init`)
 ├── images/         # Image assets
 ├── js/             # JavaScript files
 └── public/         # Generated blog
@@ -76,16 +76,16 @@ vāk uses environment variables for configuration:
 
 ## Templating
 
-vāk uses [Handlebars](https://handlebarsjs.com/) for templating, giving you full control over your blog's HTML structure.
+vāk uses [Nunjucks](https://mozilla.github.io/nunjucks/) for templating, giving you full control over your blog's HTML structure.
 
 ### Template Files
 
-When you run `vaak.cjs init`, the following Handlebars templates are created in your templates directory:
+When you run `vaak.cjs init`, the following templates are created in your templates directory:
 
-- `index.hbs` - Homepage template
-- `post.hbs` - Individual post template
-- `archive.hbs` - Archive page template
-- `404.hbs` - 404 error page template
+- `index.html` - Homepage template
+- `post.html` - Individual post template
+- `archive.html` - Archive page template
+- `404.html` - 404 error page template
 - `feed.xml` - RSS feed template
 - `style.css` - Default stylesheet
 - `post.md` - Markdown template for new posts
@@ -94,21 +94,21 @@ When you run `vaak.cjs init`, the following Handlebars templates are created in 
 
 Each template has access to specific data when rendered:
 
-**index.hbs** (Homepage)
-- `allPosts` - Array of all published posts, each with:
+**index.html** (Homepage)
+- `allPosts` - Array of all published posts (sorted by date, newest first), each with:
   - `title` - Post title
   - `date` - Formatted date (MMM DD, YYYY)
   - `slug` - Post URL slug
 - `siteUrl` - Your site URL (from SITE_URL env variable)
 
-**post.hbs** (Individual Posts)
+**post.html** (Individual Posts)
 - `title` - Post title
 - `date` - Formatted date (MMM DD, YYYY)
 - `slug` - Post URL slug
-- `content` - Rendered HTML content (use triple braces: `{{{content}}}`)
+- `content` - Rendered HTML content (use `| safe` filter to render unescaped)
 - `siteUrl` - Your site URL
 
-**archive.hbs** (Archive Page)
+**archive.html** (Archive Page)
 - `postsByYear` - Array of year groups, each with:
   - `year` - Year number
   - `posts` - Array of posts in that year, each with:
@@ -117,35 +117,40 @@ Each template has access to specific data when rendered:
     - `slug` - Post URL slug
 - `siteUrl` - Your site URL
 
-**404.hbs** (404 Error Page)
+**404.html** (404 Error Page)
 - `siteUrl` - Your site URL
 
-### Handlebars Syntax
+### Nunjucks Syntax
 
-Templates use standard Handlebars syntax. Common patterns:
+Templates use standard Nunjucks syntax. Common patterns:
 
-```handlebars
+```nunjucks
 <!-- Display a variable -->
-{{title}}
+{{ title }}
 
-<!-- Display unescaped HTML -->
-{{{content}}}
+<!-- Display unescaped HTML (for rendered markdown content) -->
+{{ content | safe }}
 
 <!-- Loop through posts -->
-{{#each allPosts}}
-  <li><a href="./{{slug}}">{{title}}</a> - {{date}}</li>
-{{/each}}
+{% for post in allPosts %}
+  <li><a href="./{{ post.slug }}">{{ post.title }}</a> - {{ post.date }}</li>
+{% endfor %}
 
-<!-- Nested loops -->
-{{#each postsByYear}}
-  <h3>{{year}}</h3>
-  {{#each posts}}
-    <li>{{title}}</li>
-  {{/each}}
-{{/each}}
+<!-- Limit to first 5 posts -->
+{% for post in allPosts %}{% if loop.index <= 5 %}
+  <li>{{ post.title }}</li>
+{% endif %}{% endfor %}
+
+<!-- Nested loops (archive page) -->
+{% for group in postsByYear %}
+  <h3>{{ group.year }}</h3>
+  {% for post in group.posts %}
+    <li>{{ post.title }}</li>
+  {% endfor %}
+{% endfor %}
 ```
 
-For more information on Handlebars syntax and features, visit the [Handlebars documentation](https://handlebarsjs.com/guide/).
+For more information on Nunjucks syntax and features, visit the [Nunjucks documentation](https://mozilla.github.io/nunjucks/templating.html).
 
 ## Colophon
 
