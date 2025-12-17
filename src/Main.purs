@@ -29,7 +29,7 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Process (argv, exit)
 import RssGenerator as Rss
-import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
+import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Category, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
 import Utils (archiveTemplate, createFolderIfNotPresent, formatDate, getCategoriesJson, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, runAppM, tmpFolder)
 
@@ -300,22 +300,22 @@ initApp = do
     createFolderIfNotPresent config.contentFolder
     createFolderIfNotPresent "images"
     createFolderIfNotPresent "js"
-    Logs.logInfo "Generating index.html..."
-    writeTextFile UTF8 (config.templateFolder <> "/index.html") indexHtmlTemplate
-    Logs.logInfo "Generating post.html..."
-    writeTextFile UTF8 (config.templateFolder <> "/post.html") postHtmlTemplate
+    Logs.logInfo "Generating index.hbs..."
+    writeTextFile UTF8 (config.templateFolder <> "/index.hbs") indexHbsTemplate
+    Logs.logInfo "Generating post.hbs..."
+    writeTextFile UTF8 (config.templateFolder <> "/post.hbs") postHbsTemplate
     Logs.logInfo "Generating style.css..."
     writeTextFile UTF8 (config.templateFolder <> "/style.css") styleTemplate
     Logs.logInfo "Generating feed.xml..."
     when (isNothing config.domain) $ Logs.logWarning "feed.xml template is missing domain because you have not set SITE_URL in the environment. Manually edit the feed.xml file to add the correct domain. When building the site, you will need to set the domain in your shell enviroment. (e.g SITE_URL=https://my.blog)"
     writeTextFile UTF8 (config.templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "https://my.blog" config.domain))
-    Logs.logInfo "Generating archive.html..."
-    writeTextFile UTF8 (config.templateFolder <> "/archive.html") archiveHtmlTemplate
-    Logs.logInfo "Generating 404.html..."
-    writeTextFile UTF8 (config.templateFolder <> "/404.html") notFoundTemplate
+    Logs.logInfo "Generating archive.hbs..."
+    writeTextFile UTF8 (config.templateFolder <> "/archive.hbs") archiveHbsTemplate
+    Logs.logInfo "Generating 404.hbs..."
+    writeTextFile UTF8 (config.templateFolder <> "/404.hbs") notFoundHbsTemplate
     Logs.logInfo "Generating new post markdown template..."
     writeTextFile UTF8 (config.templateFolder <> "/post.md") postMdTemplate
-    Logs.logSuccess "Done! You can now edit these templates. Just retain the handlebars."
+    Logs.logSuccess "Done! You can now edit these templates."
 
 removeDraftsFromOutput :: Array FrontMatterS -> AppM Unit
 removeDraftsFromOutput drafts = do
