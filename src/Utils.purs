@@ -12,10 +12,11 @@ import Data.String (take, length, toLower)
 import Data.String.CodeUnits (toCharArray)
 import Effect.Aff (Aff, Error, try)
 import Effect.Class (class MonadEffect, liftEffect)
+import Foreign (Foreign)
 import Node.FS.Aff (mkdir, readdir)
 import Node.Path (FilePath)
 import Node.Process (lookupEnv)
-import Types (Category, Config, FormattedMarkdownData, RawFormattedMarkdownData, Status(..), AppM)
+import Types (Category, Config, FormattedMarkdownData, RawFormattedMarkdownData, Status(..), AppM, FrontMatterS)
 
 defaultTemplateFolder :: String
 defaultTemplateFolder = "./templates"
@@ -54,6 +55,14 @@ createFolderIfNotPresent folderName = do
 foreign import formatDate :: String -> String -> String
 
 foreign import md2RawFormattedData :: String -> RawFormattedMarkdownData
+
+foreign import preparePostContext :: (String -> String -> String) -> FrontMatterS -> String -> String -> Foreign
+
+foreign import prepareIndexContext :: (String -> String -> String) -> Array FrontMatterS -> String -> Foreign
+
+foreign import prepareArchiveContext :: (String -> String -> String) -> Array { year :: Int, posts :: Array FrontMatterS } -> String -> Foreign
+
+foreign import prepare404Context :: String -> Foreign
 
 md2FormattedData :: String -> FormattedMarkdownData
 md2FormattedData s =
