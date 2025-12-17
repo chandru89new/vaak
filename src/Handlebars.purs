@@ -2,11 +2,6 @@ module Handlebars where
 
 import Foreign (Foreign)
 
--- A compiled Handlebars template function
-foreign import data CompiledTemplate :: Type
-
--- Compile a template string into a reusable template function
-foreign import compileTemplate :: String -> CompiledTemplate
-
--- Render a compiled template with a context object
-foreign import renderTemplate :: CompiledTemplate -> Foreign -> String
+-- Render a template file with context data
+-- Takes filename (e.g., "index.hbs") and context object, returns HTML string
+foreign import render :: String -> Foreign -> String

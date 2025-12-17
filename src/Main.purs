@@ -29,10 +29,10 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Process (argv, exit)
 import RssGenerator as Rss
-import Handlebars (CompiledTemplate, compileTemplate, renderTemplate)
+import Handlebars (render)
 import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Command(..), Config, Status(..), FrontMatterS)
-import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
+import Utils (createFolderIfNotPresent, formatDate, getConfig, liftAppM, md2FormattedData, newPostTemplate, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -80,42 +80,24 @@ helpText =
   new [slug] - create a new post.
 """
 
-loadTemplates :: AppM { index :: CompiledTemplate, post :: CompiledTemplate, archive :: CompiledTemplate, notFound :: CompiledTemplate }
-loadTemplates = do
-  config <- ask
-  liftAppM $ do
-    indexTpl <- readTextFile UTF8 (homepageTemplate config.templateFolder)
-    postTpl <- readTextFile UTF8 (defaultBlogpostTemplate config.templateFolder)
-    archiveTpl <- readTextFile UTF8 (archiveTemplate config.templateFolder)
-    notFoundTpl <- readTextFile UTF8 (notFoundTemplate config.templateFolder)
-    pure
-      { index: compileTemplate indexTpl
-      , post: compileTemplate postTpl
-      , archive: compileTemplate archiveTpl
-      , notFound: compileTemplate notFoundTpl
-      }
-
 buildSite :: AppM Unit
 buildSite = do
   config <- ask
   liftAppM $ Logs.logInfo "Starting..."
   liftAppM $ createFolderIfNotPresent tmpFolder
-  liftAppM $ Logs.logInfo "Loading templates..."
-  templates <- loadTemplates
-  liftAppM $ Logs.logSuccess "Templates loaded."
+  { published, draft } <- generatePostsHTML
+  liftAppM $ Logs.logSuccess "Posts generated."
   liftAppM $ Logs.logInfo "Generating home page..."
-  { published, draft } <- generatePostsHTML templates.post
-  _ <- createHomePage templates.index published
+  _ <- createHomePage published
   liftAppM $ Logs.logSuccess "Home page generated."
   liftAppM $ Logs.logInfo "Generating archive page..."
-  _ <- writeArchiveByYearPage templates.archive published
+  _ <- writeArchiveByYearPage published
   liftAppM $ Logs.logSuccess "Archive page generated."
   liftAppM $ Logs.logInfo "Generating RSS feed..."
   _ <- Rss.generateRSSFeed (take 10 published)
   liftAppM $ Logs.logSuccess "RSS feed generated."
-  liftAppM $ Logs.logSuccess "Posts generated."
   liftAppM $ Logs.logInfo "Generating 404 page..."
-  _ <- write404Page templates.notFound
+  _ <- write404Page
   liftAppM $ Logs.logSuccess "404 page generated."
   liftAppM $ Logs.logInfo "Copying images folder..."
   _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
@@ -147,17 +129,17 @@ mkCommand xs = case head (drop 2 xs) of
     _ -> Invalid
   _ -> Invalid
 
-generatePostsHTML :: CompiledTemplate -> AppM ({ published :: Array (FrontMatterS), draft :: Array (FrontMatterS), unlisted :: Array (FrontMatterS) })
-generatePostsHTML postTemplate = do
+generatePostsHTML :: AppM { published :: Array FrontMatterS, draft :: Array FrontMatterS, unlisted :: Array FrontMatterS }
+generatePostsHTML = do
   config <- ask
   liftAppM $ do
     cacheData <- readCacheData
     mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
-    postsMetadata <- parTraverse (\f -> generatePostHTML config postTemplate cacheData f) mdFiles
+    postsMetadata <- parTraverse (\f -> generatePostHTML config cacheData f) mdFiles
     pure $ { published: sortPosts $ filter (\d -> d.status == Published) postsMetadata, draft: sortPosts $ filter (\d -> d.status == Draft) postsMetadata, unlisted: sortPosts $ filter (\d -> d.status == Unlisted) postsMetadata }
 
-generatePostHTML :: Config -> CompiledTemplate -> CacheData -> String -> Aff (FrontMatterS)
-generatePostHTML config template cache fileName = do
+generatePostHTML :: Config -> CacheData -> String -> Aff FrontMatterS
+generatePostHTML config cache fileName = do
   fd <- md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fileName)
   needsBuilding <- needsInvalidation cache fileName
   when needsBuilding $ do
@@ -171,7 +153,7 @@ generatePostHTML config template cache fileName = do
   where
   writePost fd = do
     let context = preparePostContext formatDate fd.frontMatter fd.content (fromMaybe "" config.domain)
-    let html = renderTemplate template context
+    let html = render "post.hbs" context
     res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") html
     case res of
       Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
@@ -188,12 +170,12 @@ generateStyles = do
   copyStyleFileToTmp config = "cp " <> config.templateFolder <> "/style.css " <> tmpFolder <> "/style1.css"
   command = "tailwindcss -i style1.css -o style.css --minify && rm style1.css"
 
-createHomePage :: CompiledTemplate -> Array FrontMatterS -> AppM Unit
-createHomePage template sortedArrayofPosts = do
+createHomePage :: Array FrontMatterS -> AppM Unit
+createHomePage sortedArrayofPosts = do
   config <- ask
   liftAppM $ do
     let context = prepareIndexContext formatDate sortedArrayofPosts (fromMaybe "" config.domain)
-    let html = renderTemplate template context
+    let html = render "index.hbs" context
     writeTextFile UTF8 (tmpFolder <> "/index.html") html
 
 sortPosts :: Array FrontMatterS -> Array FrontMatterS
@@ -227,21 +209,21 @@ groupPostsByYearArray posts =
   in
     map (\(Tuple year ps) -> { year, posts: ps }) asList
 
-writeArchiveByYearPage :: CompiledTemplate -> Array (FrontMatterS) -> AppM Unit
-writeArchiveByYearPage template fds = do
+writeArchiveByYearPage :: Array FrontMatterS -> AppM Unit
+writeArchiveByYearPage fds = do
   config <- ask
   liftAppM $ do
     let groupedPosts = groupPostsByYearArray fds
     let context = prepareArchiveContext formatDate groupedPosts (fromMaybe "" config.domain)
-    let html = renderTemplate template context
+    let html = render "archive.hbs" context
     writeTextFile UTF8 (tmpFolder <> "/archive.html") html
 
-write404Page :: CompiledTemplate -> AppM Unit
-write404Page template = do
+write404Page :: AppM Unit
+write404Page = do
   config <- ask
   liftAppM $ do
     let context = prepare404Context (fromMaybe "" config.domain)
-    let html = renderTemplate template context
+    let html = render "404.hbs" context
     writeTextFile UTF8 (tmpFolder <> "/404.html") html
 
 createNewPost :: String -> AppM Unit
