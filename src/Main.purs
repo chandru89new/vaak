@@ -29,9 +29,10 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Process (argv, exit)
 import RssGenerator as Rss
+import Handlebars (CompiledTemplate, compileTemplate, renderTemplate)
 import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Category, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
-import Utils (archiveTemplate, createFolderIfNotPresent, formatDate, getCategoriesJson, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, runAppM, tmpFolder)
+import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getCategoriesJson, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, runAppM, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -78,6 +79,21 @@ helpText =
   build - build the site.
   new [slug] - create a new post.
 """
+
+loadTemplates :: AppM { index :: CompiledTemplate, post :: CompiledTemplate, archive :: CompiledTemplate, notFound :: CompiledTemplate }
+loadTemplates = do
+  config <- ask
+  liftAppM $ do
+    indexTpl <- readTextFile UTF8 (homepageTemplate config.templateFolder)
+    postTpl <- readTextFile UTF8 (defaultBlogpostTemplate config.templateFolder)
+    archiveTpl <- readTextFile UTF8 (archiveTemplate config.templateFolder)
+    notFoundTpl <- readTextFile UTF8 (notFoundTemplate config.templateFolder)
+    pure
+      { index: compileTemplate indexTpl
+      , post: compileTemplate postTpl
+      , archive: compileTemplate archiveTpl
+      , notFound: compileTemplate notFoundTpl
+      }
 
 buildSite :: AppM Unit
 buildSite = do
