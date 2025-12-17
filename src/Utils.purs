@@ -27,7 +27,7 @@ defaultContentFolder :: String
 defaultContentFolder = "./posts"
 
 defaultBlogpostTemplate :: FilePath -> String
-defaultBlogpostTemplate templateFolder = templateFolder <> "/post.html"
+defaultBlogpostTemplate templateFolder = templateFolder <> "/post.hbs"
 
 newPostTemplate :: FilePath -> String
 newPostTemplate templateFolder = templateFolder <> "/post.md"
@@ -36,10 +36,13 @@ tmpFolder :: String
 tmpFolder = "./.vaak"
 
 archiveTemplate :: FilePath -> String
-archiveTemplate templateFolder = templateFolder <> "/archive.html"
+archiveTemplate templateFolder = templateFolder <> "/archive.hbs"
 
 homepageTemplate :: FilePath -> String
-homepageTemplate templateFolder = templateFolder <> "/index.html"
+homepageTemplate templateFolder = templateFolder <> "/index.hbs"
+
+notFoundTemplate :: FilePath -> String
+notFoundTemplate templateFolder = templateFolder <> "/404.hbs"
 
 createFolderIfNotPresent :: FilePath -> Aff Unit
 createFolderIfNotPresent folderName = do
