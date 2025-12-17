@@ -9,6 +9,7 @@
     "dayjs": "^1.11.7",
     "esbuild": "^0.24.2",
     "gray-matter": "^4.0.3",
+    "handlebars": "^4.7.8",
     "js-yaml": "^4.1.0",
     "markdown-it": "^13.0.1",
     "markdown-it-anchor": "^9.2.0",
