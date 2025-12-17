@@ -103,31 +103,31 @@ buildSite = do
   liftAppM $ Logs.logInfo "Loading templates..."
   templates <- loadTemplates
   liftAppM $ Logs.logSuccess "Templates loaded."
+  liftAppM $ Logs.logInfo "Generating home page..."
   { published, draft } <- generatePostsHTML templates.post
-  liftAppM $ Logs.logSuccess $ "Posts page generated."
-  liftAppM $ Logs.logInfo $ "Generating archive page..."
-  _ <- writeArchiveByYearPage templates.archive published
-  liftAppM $ Logs.logSuccess $ "Archive page generated."
-  liftAppM $ Logs.logInfo $ "Generating home page..."
   _ <- createHomePage templates.index published
-  liftAppM $ Logs.logSuccess $ "Home page generated."
-  liftAppM $ Logs.logInfo $ "Copying 404.html..."
-  _ <- liftEffect $ execSync ("cp " <> config.templateFolder <> "/404.html " <> tmpFolder) defaultExecSyncOptions
-  liftAppM $ Logs.logSuccess $ "404.html copied."
+  liftAppM $ Logs.logSuccess "Home page generated."
+  liftAppM $ Logs.logInfo "Generating archive page..."
+  _ <- writeArchiveByYearPage templates.archive published
+  liftAppM $ Logs.logSuccess "Archive page generated."
+  liftAppM $ Logs.logInfo "Generating RSS feed..."
+  _ <- Rss.generateRSSFeed (take 10 published)
+  liftAppM $ Logs.logSuccess "RSS feed generated."
+  liftAppM $ Logs.logSuccess "Posts generated."
+  liftAppM $ Logs.logInfo "Generating 404 page..."
+  _ <- write404Page templates.notFound
+  liftAppM $ Logs.logSuccess "404 page generated."
   liftAppM $ Logs.logInfo "Copying images folder..."
   _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
-  liftAppM $ Logs.logSuccess $ "images folder copied."
+  liftAppM $ Logs.logSuccess "images folder copied."
   liftAppM $ Logs.logInfo "Copying js folder..."
   _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
   liftAppM $ Logs.logSuccess "js folder copied."
   liftAppM $ Logs.logInfo "Generating styles.css..."
   _ <- generateStyles
   liftAppM $ Logs.logSuccess "styles.css generated."
-  liftAppM $ Logs.logInfo "Generating RSS feed..."
-  _ <- Rss.generateRSSFeed (take 10 published)
-  liftAppM $ Logs.logSuccess "RSS feed generated."
-  liftAppM $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
   _ <- removeDraftsFromOutput draft
+  liftAppM $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
   _ <- liftAppM $ createFolderIfNotPresent config.outputFolder
   _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder) defaultExecSyncOptions
   liftAppM $ Logs.logSuccess "Copied."
