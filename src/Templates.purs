@@ -115,14 +115,17 @@ Write your post here.
 
 feedTemplate :: String -> String
 feedTemplate domain =
-  one <> "<link>" <> domain <> "/</link>" <> two <> "<atom:link href=\"" <> domain <> "/feed.xml\" rel=\"self\" type=\"application/rss+xml\"" <> "/>" <> three 
+  one <> "<link>" <> domain <> "/</link>" <> two <> "<atom:link href=\"" <> domain <> "/feed.xml\" rel=\"self\" type=\"application/rss+xml\"" <> "/>" <> three
   where
-    one = """<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>my blog — RSS Feed</title>"""
-    two = """<description>this is my blog</description>
+  one = """<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>my blog — RSS Feed</title>"""
+  two =
+    """<description>this is my blog</description>
     <lastBuildDate>{{last_updated_date}}</lastBuildDate>"""
-    three = """{{feed_items}}
+  three =
+    """{{feed_items}}
   </channel>
 </rss>"""
+
 --   """<?xml version="1.0" encoding="utf-8"?>
 -- <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 --   <channel>
@@ -136,7 +139,6 @@ feedTemplate domain =
 styleTemplate :: String
 styleTemplate =
   """@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,100..900,50;1,9..144,100..900,50&display=swap");
-@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css");
 
 @import "tailwindcss";
 
@@ -263,7 +265,8 @@ hr {
 }"""
 
 notFoundHbsTemplate :: String
-notFoundHbsTemplate = """<!DOCTYPE html>
+notFoundHbsTemplate =
+  """<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -301,7 +304,8 @@ notFoundHbsTemplate = """<!DOCTYPE html>
 </html>"""
 
 archiveHbsTemplate :: String
-archiveHbsTemplate = """<!DOCTYPE html>
+archiveHbsTemplate =
+  """<!DOCTYPE html>
 <html lang="en">
 
 <head>

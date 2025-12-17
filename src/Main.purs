@@ -153,7 +153,7 @@ generatePostHTML config cache fileName = do
   where
   writePost fd = do
     let context = preparePostContext fd.frontMatter fd.content (fromMaybe "" config.domain)
-    let html = render "post.hbs" context
+    let html = render (templateFolder <> "/post.hbs") context
     res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") html
     case res of
       Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
@@ -175,7 +175,7 @@ createHomePage sortedArrayofPosts = do
   liftAppM $ do
     let recentPosts = take config.recentPosts sortedArrayofPosts
     let context = prepareIndexContext recentPosts (fromMaybe "" config.domain)
-    let html = render "index.hbs" context
+    let html = render (templateFolder <> "/index.hbs") context
     writeTextFile UTF8 (tmpFolder <> "/index.html") html
 
 sortPosts :: Array FrontMatterS -> Array FrontMatterS
@@ -215,7 +215,7 @@ writeArchiveByYearPage fds = do
   liftAppM $ do
     let groupedPosts = groupPostsByYearArray fds
     let context = prepareArchiveContext groupedPosts (fromMaybe "" config.domain)
-    let html = render "archive.hbs" context
+    let html = render (templateFolder <> "/archive.hbs") context
     writeTextFile UTF8 (tmpFolder <> "/archive.html") html
 
 write404Page :: AppM Unit
@@ -223,7 +223,7 @@ write404Page = do
   config <- ask
   liftAppM $ do
     let context = prepare404Context (fromMaybe "" config.domain)
-    let html = render "404.hbs" context
+    let html = render (templateFolder <> "/404.hbs") context
     writeTextFile UTF8 (tmpFolder <> "/404.html") html
 
 createNewPost :: String -> AppM Unit
