@@ -100,7 +100,10 @@ buildSite = do
   config <- ask
   liftAppM $ Logs.logInfo "Starting..."
   liftAppM $ createFolderIfNotPresent tmpFolder
-  { published, draft } <- generatePostsHTML
+  liftAppM $ Logs.logInfo "Loading templates..."
+  templates <- loadTemplates
+  liftAppM $ Logs.logSuccess "Templates loaded."
+  { published, draft } <- generatePostsHTML templates.post
   liftAppM $ Logs.logSuccess $ "Posts page generated."
   liftAppM $ Logs.logInfo $ "Generating archive page..."
   _ <- writeArchiveByYearPage published
@@ -144,15 +147,13 @@ mkCommand xs = case head (drop 2 xs) of
     _ -> Invalid
   _ -> Invalid
 
-generatePostsHTML :: AppM ({ published :: Array (FrontMatterS), draft :: Array (FrontMatterS), unlisted :: Array (FrontMatterS) })
-generatePostsHTML = do
+generatePostsHTML :: CompiledTemplate -> AppM ({ published :: Array (FrontMatterS), draft :: Array (FrontMatterS), unlisted :: Array (FrontMatterS) })
+generatePostsHTML postTemplate = do
   config <- ask
-  template <- readPostTemplate
   liftAppM $ do
-    let compiledTemplate = compileTemplate template
     cacheData <- readCacheData
     mdFiles <- readdir config.contentFolder >>= (\filename -> pure $ filter (contains (Pattern ".md")) filename)
-    postsMetadata <- parTraverse (\f -> generatePostHTML config compiledTemplate cacheData f) mdFiles
+    postsMetadata <- parTraverse (\f -> generatePostHTML config postTemplate cacheData f) mdFiles
     pure $ { published: sortPosts $ filter (\d -> d.status == Published) postsMetadata, draft: sortPosts $ filter (\d -> d.status == Draft) postsMetadata, unlisted: sortPosts $ filter (\d -> d.status == Unlisted) postsMetadata }
 
 generatePostHTML :: Config -> CompiledTemplate -> CacheData -> String -> Aff (FrontMatterS)
@@ -182,11 +183,6 @@ replaceContentInTemplate (Template template) pd =
     # replaceAll (Pattern "{{content}}") (Replacement pd.content)
     # replaceAll (Pattern "{{date}}") (Replacement $ formatDate "MMM DD, YYYY" pd.frontMatter.date)
     # replaceAll (Pattern "{{page_title}}") (Replacement pd.frontMatter.title)
-
-readPostTemplate :: AppM String
-readPostTemplate = do
-  config <- ask
-  liftAppM $ readTextFile UTF8 config.blogPostTemplate
 
 generateStyles :: AppM Buffer
 generateStyles = do
