@@ -152,7 +152,7 @@ generatePostHTML config cache fileName = do
   pure fd.frontMatter
   where
   writePost fd = do
-    let context = preparePostContext formatDate fd.frontMatter fd.content (fromMaybe "" config.domain)
+    let context = preparePostContext fd.frontMatter fd.content (fromMaybe "" config.domain)
     let html = render "post.hbs" context
     res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") html
     case res of
@@ -173,7 +173,7 @@ createHomePage :: Array FrontMatterS -> AppM Unit
 createHomePage sortedArrayofPosts = do
   config <- ask
   liftAppM $ do
-    let context = prepareIndexContext formatDate sortedArrayofPosts (fromMaybe "" config.domain)
+    let context = prepareIndexContext sortedArrayofPosts (fromMaybe "" config.domain)
     let html = render "index.hbs" context
     writeTextFile UTF8 (tmpFolder <> "/index.html") html
 
@@ -213,7 +213,7 @@ writeArchiveByYearPage fds = do
   config <- ask
   liftAppM $ do
     let groupedPosts = groupPostsByYearArray fds
-    let context = prepareArchiveContext formatDate groupedPosts (fromMaybe "" config.domain)
+    let context = prepareArchiveContext groupedPosts (fromMaybe "" config.domain)
     let html = render "archive.hbs" context
     writeTextFile UTF8 (tmpFolder <> "/archive.html") html
 

@@ -11,7 +11,7 @@ import Data.String (take, length, toLower)
 import Data.String.CodeUnits (toCharArray)
 import Effect.Aff (Aff, Error, try)
 import Effect.Class (class MonadEffect, liftEffect)
-import Foreign (Foreign)
+import Foreign (Foreign, unsafeToForeign)
 import Node.FS.Aff (mkdir, readdir)
 import Node.Path (FilePath)
 import Node.Process (lookupEnv)
@@ -40,13 +40,35 @@ foreign import formatDate :: String -> String -> String
 
 foreign import md2RawFormattedData :: String -> RawFormattedMarkdownData
 
-foreign import preparePostContext :: (String -> String -> String) -> FrontMatterS -> String -> String -> Foreign
+-- Context preparation functions (pure PureScript)
+preparePostContext :: FrontMatterS -> String -> String -> Foreign
+preparePostContext fm content siteUrl = unsafeToForeign
+  { title: fm.title
+  , date: formatDate "MMM DD, YYYY" fm.date
+  , slug: fm.slug
+  , content: content
+  , siteUrl: siteUrl
+  }
 
-foreign import prepareIndexContext :: (String -> String -> String) -> Array FrontMatterS -> String -> Foreign
+prepareIndexContext :: Array FrontMatterS -> String -> Foreign
+prepareIndexContext posts siteUrl = unsafeToForeign
+  { allPosts: map formatPost posts
+  , siteUrl: siteUrl
+  }
+  where
+  formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug }
 
-foreign import prepareArchiveContext :: (String -> String -> String) -> Array { year :: Int, posts :: Array FrontMatterS } -> String -> Foreign
+prepareArchiveContext :: Array { year :: Int, posts :: Array FrontMatterS } -> String -> Foreign
+prepareArchiveContext groupedPosts siteUrl = unsafeToForeign
+  { postsByYear: map formatGroup groupedPosts
+  , siteUrl: siteUrl
+  }
+  where
+  formatGroup g = { year: g.year, posts: map formatPost g.posts }
+  formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug }
 
-foreign import prepare404Context :: String -> Foreign
+prepare404Context :: String -> Foreign
+prepare404Context siteUrl = unsafeToForeign { siteUrl: siteUrl }
 
 md2FormattedData :: String -> FormattedMarkdownData
 md2FormattedData s =
