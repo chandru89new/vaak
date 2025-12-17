@@ -16,7 +16,7 @@ import Foreign (Foreign)
 import Node.FS.Aff (mkdir, readdir)
 import Node.Path (FilePath)
 import Node.Process (lookupEnv)
-import Types (Category, Config, FormattedMarkdownData, RawFormattedMarkdownData, Status(..), AppM, FrontMatterS)
+import Types (Config, FormattedMarkdownData, RawFormattedMarkdownData, Status(..), AppM, FrontMatterS)
 
 defaultTemplateFolder :: String
 defaultTemplateFolder = "./templates"
@@ -71,8 +71,6 @@ md2FormattedData s =
     status = stringToStatus r.frontMatter.status
   in
     { frontMatter: { title: r.frontMatter.title, date: r.frontMatter.date, slug: r.frontMatter.slug, tags: r.frontMatter.tags, status: status }, content: r.content, raw: r.raw }
-
-foreign import getCategoriesJson :: String -> Array Category
 
 getConfig :: forall m. (MonadEffect m) => m Config
 getConfig = liftEffect $ do

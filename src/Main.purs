@@ -14,7 +14,7 @@ import Data.Int (fromString)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
-import Data.String (Pattern(..), Replacement(..), contains, joinWith, replaceAll, split)
+import Data.String (Pattern(..), Replacement(..), contains, replaceAll, split)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_, throwError, try)
@@ -31,7 +31,7 @@ import Node.Process (argv, exit)
 import RssGenerator as Rss
 import Handlebars (CompiledTemplate, compileTemplate, renderTemplate)
 import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
-import Types (AppM, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
+import Types (AppM, Command(..), Config, Status(..), FrontMatterS)
 import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
 
 main :: Effect Unit
@@ -177,13 +177,6 @@ generatePostHTML config template cache fileName = do
       Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
       Right _ -> Logs.logSuccess $ "Wrote: " <> config.contentFolder <> "/" <> fileName <> " -> " <> tmpFolder <> "/" <> fd.frontMatter.slug <> ".html"
 
-replaceContentInTemplate :: Template -> FormattedMarkdownData -> String
-replaceContentInTemplate (Template template) pd =
-  replaceAll (Pattern "{{title}}") (Replacement $ "<a href=\"./" <> pd.frontMatter.slug <> "\">" <> pd.frontMatter.title <> "</a>") template
-    # replaceAll (Pattern "{{content}}") (Replacement pd.content)
-    # replaceAll (Pattern "{{date}}") (Replacement $ formatDate "MMM DD, YYYY" pd.frontMatter.date)
-    # replaceAll (Pattern "{{page_title}}") (Replacement pd.frontMatter.title)
-
 generateStyles :: AppM Buffer
 generateStyles = do
   config <- ask
@@ -194,19 +187,6 @@ generateStyles = do
   options = defaultExecSyncOptions { cwd = Just tmpFolder }
   copyStyleFileToTmp config = "cp " <> config.templateFolder <> "/style.css " <> tmpFolder <> "/style1.css"
   command = "tailwindcss -i style1.css -o style.css --minify && rm style1.css"
-
-recentPosts :: Int -> Array FrontMatterS -> String
-recentPosts n xs =
-  let
-    recentN = take n xs
-  in
-    case recentN of
-      [] -> "Nothing here."
-      ys -> renderRecents ys
-        where
-        renderRecents fds = "<ul>" <> foldl fn "" fds <> "</ul>"
-
-        fn b a = b <> "<li><a href=\"/" <> a.slug <> "\">" <> a.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" a.date <> "</span>" <> "</li>"
 
 createHomePage :: CompiledTemplate -> Array FrontMatterS -> AppM Unit
 createHomePage template sortedArrayofPosts = do
@@ -246,26 +226,6 @@ groupPostsByYearArray posts =
     asList = Map.toUnfoldable grouped # sortBy (\(Tuple a1 _) (Tuple a2 _) -> if a1 > a2 then LT else GT)
   in
     map (\(Tuple year ps) -> { year, posts: ps }) asList
-
-groupedPostsToHTML :: Map Int (Array FrontMatterS) -> String
-groupedPostsToHTML groupedPosts =
-  let
-    formattedDataToHTML :: FrontMatterS -> String
-    formattedDataToHTML fd = "<li><a href=\"/" <> fd.slug <> "\">" <> fd.title <> "</a> &mdash; <span class=\"date\">" <> formatDate "MMM DD, YYYY" fd.date <> "</span></li>"
-
-    arrayDataToHTML :: Array FrontMatterS -> String
-    arrayDataToHTML fs = "<ul>" <> (map formattedDataToHTML fs # joinWith "") <> "</ul>"
-
-    mapAsList :: Array (Tuple Int (Array FrontMatterS))
-    mapAsList = Map.toUnfoldable groupedPosts # sortBy (\(Tuple a1 _) (Tuple a2 _) -> if a1 > a2 then LT else GT)
-
-    tupleToString :: Tuple Int (Array FrontMatterS) -> String
-    tupleToString (Tuple year fds) = "<section><h3>" <> show year <> "</h3><div>" <> arrayDataToHTML fds <> "</div></section>"
-
-    result :: String
-    result = map tupleToString mapAsList # joinWith ""
-  in
-    result
 
 writeArchiveByYearPage :: CompiledTemplate -> Array (FrontMatterS) -> AppM Unit
 writeArchiveByYearPage template fds = do

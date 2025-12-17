@@ -29,14 +29,6 @@ const md2RawFormattedData = (string) => {
   };
 };
 
-const getCategoriesJson = (postsDir) => {
-  try {
-    return yaml.load(fs.readFileSync(`./${postsDir}/categories.yml`, "utf-8"));
-  } catch {
-    return [];
-  }
-};
-
 // Prepare context for post.hbs template
 const preparePostContext = (formatFn) => (frontMatter) => (content) => (siteUrl) => ({
   title: frontMatter.title,
@@ -77,7 +69,6 @@ const prepare404Context = (siteUrl) => ({
 export {
   md2RawFormattedData,
   formatDate,
-  getCategoriesJson,
   preparePostContext,
   prepareIndexContext,
   prepareArchiveContext,
