@@ -58,7 +58,6 @@ type Config =
   , outputFolder :: String
   , contentFolder :: String
   , blogPostTemplate :: String
-  , totalRecentPosts :: Int
   , domain :: Maybe String
   }
 

@@ -6,8 +6,7 @@ import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Monad.Reader (ReaderT(..), runReaderT)
 import Data.Array (last)
 import Data.Either (Either(..))
-import Data.Int (fromString)
-import Data.Maybe (Maybe, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.String (take, length, toLower)
 import Data.String.CodeUnits (toCharArray)
 import Effect.Aff (Aff, Error, try)
@@ -77,15 +76,8 @@ getConfig = liftEffect $ do
   templateFolder <- lookupEnv "TEMPLATE_DIR" >>= (pure <$> fromMaybe defaultTemplateFolder)
   outputFolder <- lookupEnv "OUTPUT_DIR" >>= (pure <$> fromMaybe defaultOutputFolder)
   contentFolder <- lookupEnv "POSTS_DIR" >>= (pure <$> fromMaybe defaultContentFolder)
-  totalRecentPosts <- lookupEnv "RECENT_POSTS" >>= (pure <$> fn)
   domain <- lookupEnv "SITE_URL" >>= (\v -> pure $ (dropLeadingSlash <$> v))
-  pure $ { domain: domain, templateFolder: templateFolder, outputFolder: outputFolder, contentFolder: contentFolder, blogPostTemplate: defaultBlogpostTemplate templateFolder, totalRecentPosts: totalRecentPosts }
-  where
-  fn :: Maybe String -> Int
-  fn x = fromMaybe defaultTotalRecentPosts $ (x >>= fromString)
-
-defaultTotalRecentPosts :: Int
-defaultTotalRecentPosts = 5
+  pure $ { domain: domain, templateFolder: templateFolder, outputFolder: outputFolder, contentFolder: contentFolder, blogPostTemplate: defaultBlogpostTemplate templateFolder }
 
 stringToStatus :: String -> Status
 stringToStatus s = case toLower s of
