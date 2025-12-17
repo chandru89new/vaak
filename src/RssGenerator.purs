@@ -12,7 +12,7 @@ import Effect.Exception (error)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, writeTextFile)
 import Types (AppM, FormattedMarkdownData, FrontMatterS)
-import Utils (liftAppM, md2FormattedData)
+import Utils (liftAppM, md2FormattedData, templateFolder)
 import Utils as Utils
 
 feedItemTemplate ∷ String
@@ -29,7 +29,7 @@ generateRSSFeed :: Array FrontMatterS -> AppM Unit
 generateRSSFeed fds = do
   config <- ask
   liftAppM $ do
-    templateContents <- readTextFile UTF8 (config.templateFolder <> "/feed.xml")
+    templateContents <- readTextFile UTF8 (templateFolder <> "/feed.xml")
     parsedContents <- parTraverse (\fm -> md2FormattedData <$> readTextFile UTF8 (config.contentFolder <> "/" <> fm.slug <> ".md")) fds
     case config.domain of
       Nothing -> do

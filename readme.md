@@ -47,7 +47,7 @@ your-blog/
 └── public/         # Generated blog
 ```
 
-You can use any directory name for the posts, the templates and the public (output) folders. Just configure them through shell environment variables ([see configuration](#configuration)).
+You can configure the posts and output directories through environment variables ([see configuration](#configuration)). The `templates/` folder is fixed by convention.
 
 ## Writing Posts
 
@@ -70,10 +70,9 @@ Note: The `slug` should be the same as the filename without the `.md` extension.
 
 vāk uses environment variables for configuration:
 
-- `TEMPLATE_DIR`: Directory containing Handlebars templates (default: "./templates")
 - `OUTPUT_DIR`: Directory where the built blog will be generated (default: "./public")
 - `POSTS_DIR`: Directory containing your markdown posts (default: "./posts")
-- `SITE_URL`: The domain name of the blog. (eg. `https://yourname.com/blog`) This is required for generating RSS feed anytime you build the blog.
+- `SITE_URL`: The domain name of the blog (e.g., `https://yourname.com/blog`). Required for generating RSS feed.
 
 ## Templating
 

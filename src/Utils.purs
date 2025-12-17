@@ -17,32 +17,17 @@ import Node.Path (FilePath)
 import Node.Process (lookupEnv)
 import Types (Config, FormattedMarkdownData, RawFormattedMarkdownData, Status(..), AppM, FrontMatterS)
 
-defaultTemplateFolder :: String
-defaultTemplateFolder = "./templates"
-
 defaultOutputFolder :: String
 defaultOutputFolder = "./public"
 
 defaultContentFolder :: String
 defaultContentFolder = "./posts"
 
-defaultBlogpostTemplate :: FilePath -> String
-defaultBlogpostTemplate templateFolder = templateFolder <> "/post.hbs"
-
-newPostTemplate :: FilePath -> String
-newPostTemplate templateFolder = templateFolder <> "/post.md"
+templateFolder :: String
+templateFolder = "./templates"
 
 tmpFolder :: String
 tmpFolder = "./.vaak"
-
-archiveTemplate :: FilePath -> String
-archiveTemplate templateFolder = templateFolder <> "/archive.hbs"
-
-homepageTemplate :: FilePath -> String
-homepageTemplate templateFolder = templateFolder <> "/index.hbs"
-
-notFoundTemplate :: FilePath -> String
-notFoundTemplate templateFolder = templateFolder <> "/404.hbs"
 
 createFolderIfNotPresent :: FilePath -> Aff Unit
 createFolderIfNotPresent folderName = do
@@ -73,11 +58,10 @@ md2FormattedData s =
 
 getConfig :: forall m. (MonadEffect m) => m Config
 getConfig = liftEffect $ do
-  templateFolder <- lookupEnv "TEMPLATE_DIR" >>= (pure <$> fromMaybe defaultTemplateFolder)
   outputFolder <- lookupEnv "OUTPUT_DIR" >>= (pure <$> fromMaybe defaultOutputFolder)
   contentFolder <- lookupEnv "POSTS_DIR" >>= (pure <$> fromMaybe defaultContentFolder)
   domain <- lookupEnv "SITE_URL" >>= (\v -> pure $ (dropLeadingSlash <$> v))
-  pure $ { domain: domain, templateFolder: templateFolder, outputFolder: outputFolder, contentFolder: contentFolder, blogPostTemplate: defaultBlogpostTemplate templateFolder }
+  pure { domain, outputFolder, contentFolder }
 
 stringToStatus :: String -> Status
 stringToStatus s = case toLower s of

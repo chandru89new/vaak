@@ -54,15 +54,10 @@ instance showStatus :: Show Status where
   show (InvalidStatus s) = "InvalidStatus" <> show s
 
 type Config =
-  { templateFolder :: String
-  , outputFolder :: String
+  { outputFolder :: String
   , contentFolder :: String
-  , blogPostTemplate :: String
   , domain :: Maybe String
   }
-
--- Types from Main.purs
-newtype Template = Template String
 
 data Command
   = Build

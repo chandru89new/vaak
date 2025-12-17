@@ -32,7 +32,7 @@ import RssGenerator as Rss
 import Handlebars (render)
 import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Command(..), Config, Status(..), FrontMatterS)
-import Utils (createFolderIfNotPresent, formatDate, getConfig, liftAppM, md2FormattedData, newPostTemplate, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
+import Utils (createFolderIfNotPresent, formatDate, getConfig, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -47,7 +47,7 @@ main = do
       res <- runAppM config initApp
       case res of
         Left err -> Logs.logError $ "Could not initialize the app: " <> show err
-        Right _ -> Logs.logSuccess $ "Templates generated in " <> config.templateFolder <> ". You can edit them."
+        Right _ -> Logs.logSuccess $ "Templates generated in " <> templateFolder <> ". You can edit them."
     NewPost slug -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config (createNewPost slug)
@@ -161,13 +161,12 @@ generatePostHTML config cache fileName = do
 
 generateStyles :: AppM Buffer
 generateStyles = do
-  config <- ask
   liftAppM $ liftEffect $ do
-    _ <- execSync (copyStyleFileToTmp config) defaultExecSyncOptions
+    _ <- execSync copyStyleFileToTmp defaultExecSyncOptions
     execSync command options
   where
   options = defaultExecSyncOptions { cwd = Just tmpFolder }
-  copyStyleFileToTmp config = "cp " <> config.templateFolder <> "/style.css " <> tmpFolder <> "/style1.css"
+  copyStyleFileToTmp = "cp " <> templateFolder <> "/style.css " <> tmpFolder <> "/style1.css"
   command = "tailwindcss -i style1.css -o style.css --minify && rm style1.css"
 
 createHomePage :: Array FrontMatterS -> AppM Unit
@@ -230,7 +229,7 @@ createNewPost :: String -> AppM Unit
 createNewPost slug = do
   config <- ask
   liftAppM $ do
-    newPostTemplateContents <- readTextFile UTF8 (newPostTemplate config.templateFolder)
+    newPostTemplateContents <- readTextFile UTF8 (templateFolder <> "/post.md")
     today <- pure $ formatDate "YYYY-MM-DD" ""
     replaced <-
       pure
@@ -242,25 +241,25 @@ initApp :: AppM Unit
 initApp = do
   config <- ask
   liftAppM $ do
-    createFolderIfNotPresent config.templateFolder
+    createFolderIfNotPresent templateFolder
     createFolderIfNotPresent config.contentFolder
     createFolderIfNotPresent "images"
     createFolderIfNotPresent "js"
     Logs.logInfo "Generating index.hbs..."
-    writeTextFile UTF8 (config.templateFolder <> "/index.hbs") indexHbsTemplate
+    writeTextFile UTF8 (templateFolder <> "/index.hbs") indexHbsTemplate
     Logs.logInfo "Generating post.hbs..."
-    writeTextFile UTF8 (config.templateFolder <> "/post.hbs") postHbsTemplate
+    writeTextFile UTF8 (templateFolder <> "/post.hbs") postHbsTemplate
     Logs.logInfo "Generating style.css..."
-    writeTextFile UTF8 (config.templateFolder <> "/style.css") styleTemplate
+    writeTextFile UTF8 (templateFolder <> "/style.css") styleTemplate
     Logs.logInfo "Generating feed.xml..."
     when (isNothing config.domain) $ Logs.logWarning "feed.xml template is missing domain because you have not set SITE_URL in the environment. Manually edit the feed.xml file to add the correct domain. When building the site, you will need to set the domain in your shell enviroment. (e.g SITE_URL=https://my.blog)"
-    writeTextFile UTF8 (config.templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "https://my.blog" config.domain))
+    writeTextFile UTF8 (templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "https://my.blog" config.domain))
     Logs.logInfo "Generating archive.hbs..."
-    writeTextFile UTF8 (config.templateFolder <> "/archive.hbs") archiveHbsTemplate
+    writeTextFile UTF8 (templateFolder <> "/archive.hbs") archiveHbsTemplate
     Logs.logInfo "Generating 404.hbs..."
-    writeTextFile UTF8 (config.templateFolder <> "/404.hbs") notFoundHbsTemplate
+    writeTextFile UTF8 (templateFolder <> "/404.hbs") notFoundHbsTemplate
     Logs.logInfo "Generating new post markdown template..."
-    writeTextFile UTF8 (config.templateFolder <> "/post.md") postMdTemplate
+    writeTextFile UTF8 (templateFolder <> "/post.md") postMdTemplate
     Logs.logSuccess "Done! You can now edit these templates."
 
 removeDraftsFromOutput :: Array FrontMatterS -> AppM Unit
