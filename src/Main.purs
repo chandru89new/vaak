@@ -41,7 +41,7 @@ main = do
   case cmd of
     Test -> test
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.8.6"
+    ShowVersion -> log $ "v0.9.0"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
