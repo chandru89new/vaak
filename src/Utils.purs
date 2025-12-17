@@ -6,7 +6,6 @@ import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Monad.Reader (ReaderT(..), runReaderT)
 import Data.Array (last)
 import Data.Either (Either(..))
-import Data.Int (fromString) as Int
 import Data.Maybe (fromMaybe)
 import Data.String (take, length, toLower)
 import Data.String.CodeUnits (toCharArray)
@@ -29,9 +28,6 @@ templateFolder = "./templates"
 
 tmpFolder :: String
 tmpFolder = "./.vaak"
-
-defaultRecentPosts :: Int
-defaultRecentPosts = 10
 
 createFolderIfNotPresent :: FilePath -> Aff Unit
 createFolderIfNotPresent folderName = do
@@ -87,8 +83,7 @@ getConfig = liftEffect $ do
   outputFolder <- lookupEnv "OUTPUT_DIR" >>= (pure <$> fromMaybe defaultOutputFolder)
   contentFolder <- lookupEnv "POSTS_DIR" >>= (pure <$> fromMaybe defaultContentFolder)
   domain <- lookupEnv "SITE_URL" >>= (\v -> pure $ (dropLeadingSlash <$> v))
-  recentPosts <- lookupEnv "RECENT_POSTS" >>= (\v -> pure $ fromMaybe defaultRecentPosts (v >>= Int.fromString))
-  pure { domain, outputFolder, contentFolder, recentPosts }
+  pure { domain, outputFolder, contentFolder }
 
 stringToStatus :: String -> Status
 stringToStatus s = case toLower s of

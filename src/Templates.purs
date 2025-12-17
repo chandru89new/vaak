@@ -2,8 +2,8 @@ module Templates where
 
 import Prelude
 
-indexHbsTemplate :: String
-indexHbsTemplate =
+indexHtmlTemplate :: String
+indexHtmlTemplate =
   """<!DOCTYPE html>
 <html lang="en">
 
@@ -31,9 +31,9 @@ indexHbsTemplate =
         <h3>Most recently</h3>
         <div>
           <ul>
-            {{#each allPosts}}
-            <li><a href="./{{slug}}">{{title}}</a> &mdash; <span class="date">{{date}}</span></li>
-            {{/each}}
+            {% for post in allPosts %}{% if loop.index <= 5 %}
+            <li><a href="./{{ post.slug }}">{{ post.title }}</a> &mdash; <span class="date">{{ post.date }}</span></li>
+            {% endif %}{% endfor %}
           </ul>
         </div>
       </section>
@@ -54,8 +54,8 @@ indexHbsTemplate =
 
 </html>"""
 
-postHbsTemplate :: String
-postHbsTemplate =
+postHtmlTemplate :: String
+postHtmlTemplate =
   """<!DOCTYPE html>
 <html lang="en">
 
@@ -63,7 +63,7 @@ postHbsTemplate =
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{title}} — my blog</title>
+  <title>{{ title }} — my blog</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -76,10 +76,10 @@ postHbsTemplate =
       </a>
     </h3>
     <header>
-      <h1>{{title}}</h1>
-      <div class="date">{{date}}</div>
+      <h1>{{ title }}</h1>
+      <div class="date">{{ date }}</div>
     </header>
-    <article>{{{content}}}</article>
+    <article>{{ content | safe }}</article>
     <footer>
       <a href="/">&larr; blog</a>
       <span>&bull;</span>
@@ -125,16 +125,6 @@ feedTemplate domain =
     """{{feed_items}}
   </channel>
 </rss>"""
-
---   """<?xml version="1.0" encoding="utf-8"?>
--- <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
---   <channel>
---     <title>my blog — RSS Feed</title>
---     <link>https://my.blog.com/</link>
---     <description>this is my blog</description>
---     <lastBuildDate>{{last_updated_date}}</lastBuildDate>
---     <atom:link href="https://my.blog.com/feed.xml" rel="self" type="application/rss+xml" />
---     """
 
 styleTemplate :: String
 styleTemplate =
@@ -264,8 +254,8 @@ hr {
   @apply text-xs;
 }"""
 
-notFoundHbsTemplate :: String
-notFoundHbsTemplate =
+notFoundHtmlTemplate :: String
+notFoundHtmlTemplate =
   """<!DOCTYPE html>
 <html lang="en">
 
@@ -303,8 +293,8 @@ notFoundHbsTemplate =
 
 </html>"""
 
-archiveHbsTemplate :: String
-archiveHbsTemplate =
+archiveHtmlTemplate :: String
+archiveHtmlTemplate =
   """<!DOCTYPE html>
 <html lang="en">
 
@@ -328,16 +318,16 @@ archiveHbsTemplate =
       <h1>Archive</h1>
     </header>
     <article id="archive_container">
-      {{#each postsByYear}}
+      {% for group in postsByYear %}
       <section>
-        <h3>{{year}}</h3>
+        <h3>{{ group.year }}</h3>
         <ul>
-          {{#each posts}}
-          <li><a href="/{{slug}}">{{title}}</a> &mdash; <span class="date">{{date}}</span></li>
-          {{/each}}
+          {% for post in group.posts %}
+          <li><a href="/{{ post.slug }}">{{ post.title }}</a> &mdash; <span class="date">{{ post.date }}</span></li>
+          {% endfor %}
         </ul>
       </section>
-      {{/each}}
+      {% endfor %}
     </article>
     <footer>
       <a href="/">&larr; blog</a>

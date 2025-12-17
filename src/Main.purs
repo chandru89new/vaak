@@ -29,8 +29,8 @@ import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Process (argv, exit)
 import RssGenerator as Rss
-import Handlebars (render)
-import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
+import Nunjucks (render)
+import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundHtmlTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Command(..), Config, Status(..), FrontMatterS)
 import Utils (createFolderIfNotPresent, formatDate, getConfig, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
 
@@ -153,7 +153,7 @@ generatePostHTML config cache fileName = do
   where
   writePost fd = do
     let context = preparePostContext fd.frontMatter fd.content (fromMaybe "" config.domain)
-    let html = render (templateFolder <> "/post.hbs") context
+    let html = render (templateFolder <> "/post.html") context
     res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") html
     case res of
       Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
@@ -173,9 +173,8 @@ createHomePage :: Array FrontMatterS -> AppM Unit
 createHomePage sortedArrayofPosts = do
   config <- ask
   liftAppM $ do
-    let recentPosts = take config.recentPosts sortedArrayofPosts
-    let context = prepareIndexContext recentPosts (fromMaybe "" config.domain)
-    let html = render (templateFolder <> "/index.hbs") context
+    let context = prepareIndexContext sortedArrayofPosts (fromMaybe "" config.domain)
+    let html = render (templateFolder <> "/index.html") context
     writeTextFile UTF8 (tmpFolder <> "/index.html") html
 
 sortPosts :: Array FrontMatterS -> Array FrontMatterS
@@ -215,7 +214,7 @@ writeArchiveByYearPage fds = do
   liftAppM $ do
     let groupedPosts = groupPostsByYearArray fds
     let context = prepareArchiveContext groupedPosts (fromMaybe "" config.domain)
-    let html = render (templateFolder <> "/archive.hbs") context
+    let html = render (templateFolder <> "/archive.html") context
     writeTextFile UTF8 (tmpFolder <> "/archive.html") html
 
 write404Page :: AppM Unit
@@ -223,7 +222,7 @@ write404Page = do
   config <- ask
   liftAppM $ do
     let context = prepare404Context (fromMaybe "" config.domain)
-    let html = render (templateFolder <> "/404.hbs") context
+    let html = render (templateFolder <> "/404.html") context
     writeTextFile UTF8 (tmpFolder <> "/404.html") html
 
 createNewPost :: String -> AppM Unit
@@ -246,19 +245,19 @@ initApp = do
     createFolderIfNotPresent config.contentFolder
     createFolderIfNotPresent "images"
     createFolderIfNotPresent "js"
-    Logs.logInfo "Generating index.hbs..."
-    writeTextFile UTF8 (templateFolder <> "/index.hbs") indexHbsTemplate
-    Logs.logInfo "Generating post.hbs..."
-    writeTextFile UTF8 (templateFolder <> "/post.hbs") postHbsTemplate
+    Logs.logInfo "Generating index.html..."
+    writeTextFile UTF8 (templateFolder <> "/index.html") indexHtmlTemplate
+    Logs.logInfo "Generating post.html..."
+    writeTextFile UTF8 (templateFolder <> "/post.html") postHtmlTemplate
     Logs.logInfo "Generating style.css..."
     writeTextFile UTF8 (templateFolder <> "/style.css") styleTemplate
     Logs.logInfo "Generating feed.xml..."
     when (isNothing config.domain) $ Logs.logWarning "feed.xml template is missing domain because you have not set SITE_URL in the environment. Manually edit the feed.xml file to add the correct domain. When building the site, you will need to set the domain in your shell enviroment. (e.g SITE_URL=https://my.blog)"
     writeTextFile UTF8 (templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "https://my.blog" config.domain))
-    Logs.logInfo "Generating archive.hbs..."
-    writeTextFile UTF8 (templateFolder <> "/archive.hbs") archiveHbsTemplate
-    Logs.logInfo "Generating 404.hbs..."
-    writeTextFile UTF8 (templateFolder <> "/404.hbs") notFoundHbsTemplate
+    Logs.logInfo "Generating archive.html..."
+    writeTextFile UTF8 (templateFolder <> "/archive.html") archiveHtmlTemplate
+    Logs.logInfo "Generating 404.html..."
+    writeTextFile UTF8 (templateFolder <> "/404.html") notFoundHtmlTemplate
     Logs.logInfo "Generating new post markdown template..."
     writeTextFile UTF8 (templateFolder <> "/post.md") postMdTemplate
     Logs.logSuccess "Done! You can now edit these templates."
