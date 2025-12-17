@@ -2,12 +2,9 @@ module Templates where
 
 import Prelude
 
-import Data.Maybe (Maybe)
-
-indexHtmlTemplate :: String
-indexHtmlTemplate =
-  """
-  <!DOCTYPE html>
+indexHbsTemplate :: String
+indexHbsTemplate =
+  """<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -32,7 +29,13 @@ indexHtmlTemplate =
     <article id="archive_container">
       <section>
         <h3>Most recently</h3>
-        <div>{{recent_posts}}</div>
+        <div>
+          <ul>
+            {{#each allPosts}}
+            <li><a href="./{{slug}}">{{title}}</a> &mdash; <span class="date">{{date}}</span></li>
+            {{/each}}
+          </ul>
+        </div>
       </section>
       <section>
         <h3>Archives</h3>
@@ -49,20 +52,18 @@ indexHtmlTemplate =
   </div>
 </body>
 
-</html>
-"""
+</html>"""
 
-postHtmlTemplate :: String
-postHtmlTemplate =
-  """
-  <!DOCTYPE html>
+postHbsTemplate :: String
+postHbsTemplate =
+  """<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{page_title}} — my blog</title>
+  <title>{{title}} — my blog</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -78,7 +79,7 @@ postHtmlTemplate =
       <h1>{{title}}</h1>
       <div class="date">{{date}}</div>
     </header>
-    <article>{{content}}</article>
+    <article>{{{content}}}</article>
     <footer>
       <a href="/">&larr; blog</a>
       <span>&bull;</span>
@@ -98,8 +99,7 @@ postHtmlTemplate =
   </script>
 </body>
 
-</html>
-"""
+</html>"""
 
 postMdTemplate :: String
 postMdTemplate =
@@ -262,15 +262,15 @@ hr {
   @apply text-xs;
 }"""
 
-notFoundTemplate :: String
-notFoundTemplate = """<!DOCTYPE html>
+notFoundHbsTemplate :: String
+notFoundHbsTemplate = """<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>my blog</title>
+  <title>Not Found — my blog</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -289,7 +289,7 @@ notFoundTemplate = """<!DOCTYPE html>
         <p>Uh, that page doesn't exist. Sorry about that.</p>
       </section>
       <div>
-        <a href="./archive.html">See the full archive &rarr;</a>
+        <a href="./archive">See the full archive &rarr;</a>
       </div>
     </article>
     <footer>
@@ -300,8 +300,8 @@ notFoundTemplate = """<!DOCTYPE html>
 
 </html>"""
 
-archiveHtmlTemplate :: String
-archiveHtmlTemplate = """<!DOCTYPE html>
+archiveHbsTemplate :: String
+archiveHbsTemplate = """<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -323,7 +323,18 @@ archiveHtmlTemplate = """<!DOCTYPE html>
     <header>
       <h1>Archive</h1>
     </header>
-    <article id="archive_container">{{content}}</article>
+    <article id="archive_container">
+      {{#each postsByYear}}
+      <section>
+        <h3>{{year}}</h3>
+        <ul>
+          {{#each posts}}
+          <li><a href="/{{slug}}">{{title}}</a> &mdash; <span class="date">{{date}}</span></li>
+          {{/each}}
+        </ul>
+      </section>
+      {{/each}}
+    </article>
     <footer>
       <a href="/">&larr; blog</a>
       <span>&bull;</span>
