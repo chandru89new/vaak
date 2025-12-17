@@ -57,6 +57,7 @@ type Config =
   { outputFolder :: String
   , contentFolder :: String
   , domain :: Maybe String
+  , recentPosts :: Int
   }
 
 data Command

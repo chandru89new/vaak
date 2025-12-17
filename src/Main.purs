@@ -173,7 +173,8 @@ createHomePage :: Array FrontMatterS -> AppM Unit
 createHomePage sortedArrayofPosts = do
   config <- ask
   liftAppM $ do
-    let context = prepareIndexContext sortedArrayofPosts (fromMaybe "" config.domain)
+    let recentPosts = take config.recentPosts sortedArrayofPosts
+    let context = prepareIndexContext recentPosts (fromMaybe "" config.domain)
     let html = render "index.hbs" context
     writeTextFile UTF8 (tmpFolder <> "/index.html") html
 
