@@ -32,7 +32,7 @@ import RssGenerator as Rss
 import Handlebars (CompiledTemplate, compileTemplate, renderTemplate)
 import Templates (archiveHbsTemplate, feedTemplate, indexHbsTemplate, notFoundHbsTemplate, postHbsTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Command(..), Config, FormattedMarkdownData, Status(..), Template(..), FrontMatterS)
-import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
+import Utils (archiveTemplate, createFolderIfNotPresent, defaultBlogpostTemplate, formatDate, getConfig, homepageTemplate, liftAppM, md2FormattedData, newPostTemplate, notFoundTemplate, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -275,6 +275,14 @@ writeArchiveByYearPage template fds = do
     let context = prepareArchiveContext formatDate groupedPosts (fromMaybe "" config.domain)
     let html = renderTemplate template context
     writeTextFile UTF8 (tmpFolder <> "/archive.html") html
+
+write404Page :: CompiledTemplate -> AppM Unit
+write404Page template = do
+  config <- ask
+  liftAppM $ do
+    let context = prepare404Context (fromMaybe "" config.domain)
+    let html = renderTemplate template context
+    writeTextFile UTF8 (tmpFolder <> "/404.html") html
 
 createNewPost :: String -> AppM Unit
 createNewPost slug = do
