@@ -11,7 +11,7 @@ indexHtmlTemplate =
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>my blog</title>
+  <title>{{ siteName }}</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -20,7 +20,7 @@ indexHtmlTemplate =
   <div>
     <h3 id="home-page-logo">
       <a href="/">
-        my blog
+        {{ siteName }}
       </a>
     </h3>
     <header>
@@ -63,7 +63,7 @@ postHtmlTemplate =
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ title }} — my blog</title>
+  <title>{{ title }} — {{ siteName }}</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -72,7 +72,7 @@ postHtmlTemplate =
   <div>
     <h3 id="logo">
       <a href="/">
-        &larr; my blog
+        &larr; {{ siteName }}
       </a>
     </h3>
     <header>
@@ -113,13 +113,13 @@ status: draft
 Write your post here.
 """
 
-feedTemplate :: String -> String
-feedTemplate domain =
+feedTemplate :: String -> String -> String
+feedTemplate domain siteName =
   one <> "<link>" <> domain <> "/</link>" <> two <> "<atom:link href=\"" <> domain <> "/feed.xml\" rel=\"self\" type=\"application/rss+xml\"" <> "/>" <> three
   where
-  one = """<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>my blog — RSS Feed</title>"""
+  one = """<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>""" <> siteName <> """ — RSS Feed</title>"""
   two =
-    """<description>this is my blog</description>
+    """<description>""" <> siteName <> """</description>
     <lastBuildDate>{{last_updated_date}}</lastBuildDate>"""
   three =
     """{{feed_items}}
@@ -263,7 +263,7 @@ notFoundHtmlTemplate =
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Not Found — my blog</title>
+  <title>Not Found — {{ siteName }}</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -272,7 +272,7 @@ notFoundHtmlTemplate =
   <div>
     <h3 id="home-page-logo">
       <a href="/">
-        my blog
+        {{ siteName }}
       </a>
     </h3>
     <header>
@@ -302,7 +302,7 @@ archiveHtmlTemplate =
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Archives — my blog</title>
+  <title>Archives — {{ siteName }}</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -311,7 +311,7 @@ archiveHtmlTemplate =
   <div>
     <h3 id="logo">
       <a href="/">
-        &larr; my blog
+        &larr; {{ siteName }}
       </a>
     </h3>
     <header>

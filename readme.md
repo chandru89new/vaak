@@ -68,9 +68,10 @@ Your post content here...
 
 vāk uses environment variables for configuration:
 
+- `SITE_URL`: The URL of your blog (e.g., `https://yourname.com/blog`). **Required.**
+- `SITE_NAME`: The name of your blog (e.g., `My Blog`). **Required.**
 - `OUTPUT_DIR`: Directory where the built blog will be generated (default: "./public")
 - `POSTS_DIR`: Directory containing your markdown posts (default: "./posts")
-- `SITE_URL`: The domain name of the blog (e.g., `https://yourname.com/blog`). Required for generating RSS feed.
 
 ## Templating
 
@@ -98,7 +99,8 @@ Each template has access to specific data when rendered:
   - `title` - Post title
   - `date` - Formatted date (MMM DD, YYYY)
   - `slug` - Post URL slug
-- `siteUrl` - Your site URL (from SITE_URL env variable)
+- `siteUrl` - Your site URL
+- `siteName` - Your site name
 
 **post.html** (Individual Posts)
 
@@ -107,6 +109,7 @@ Each template has access to specific data when rendered:
 - `slug` - Post URL slug
 - `content` - Rendered HTML content (use `| safe` filter to render unescaped)
 - `siteUrl` - Your site URL
+- `siteName` - Your site name
 
 **archive.html** (Archive Page)
 
@@ -117,10 +120,12 @@ Each template has access to specific data when rendered:
     - `date` - Formatted date (MMM DD, YYYY)
     - `slug` - Post URL slug
 - `siteUrl` - Your site URL
+- `siteName` - Your site name
 
 **404.html** (404 Error Page)
 
 - `siteUrl` - Your site URL
+- `siteName` - Your site name
 
 ### Nunjucks Syntax
 

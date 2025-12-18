@@ -84,6 +84,7 @@ buildSite :: AppM Unit
 buildSite = do
   config <- ask
   when (isNothing config.domain) $ liftAppM $ throwError $ error "SITE_URL is required. Set it in your environment (e.g. SITE_URL=https://my.blog)."
+  when (isNothing config.siteName) $ liftAppM $ throwError $ error "SITE_NAME is required. Set it in your environment (e.g. SITE_NAME=\"My Blog\")."
   liftAppM $ Logs.logInfo "Starting..."
   liftAppM $ createFolderIfNotPresent tmpFolder
   { published, draft } <- generatePostsHTML
@@ -153,7 +154,7 @@ generatePostHTML config cache fileName = do
   pure fd.frontMatter
   where
   writePost fd = do
-    let context = preparePostContext fd.frontMatter fd.content (fromMaybe "" config.domain)
+    let context = preparePostContext config fd.frontMatter fd.content
     let html = render (templateFolder <> "/post.html") context
     res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") html
     case res of
@@ -174,7 +175,7 @@ createHomePage :: Array FrontMatterS -> AppM Unit
 createHomePage sortedArrayofPosts = do
   config <- ask
   liftAppM $ do
-    let context = prepareIndexContext sortedArrayofPosts (fromMaybe "" config.domain)
+    let context = prepareIndexContext config sortedArrayofPosts
     let html = render (templateFolder <> "/index.html") context
     writeTextFile UTF8 (tmpFolder <> "/index.html") html
 
@@ -214,7 +215,7 @@ writeArchiveByYearPage fds = do
   config <- ask
   liftAppM $ do
     let groupedPosts = groupPostsByYearArray fds
-    let context = prepareArchiveContext groupedPosts (fromMaybe "" config.domain)
+    let context = prepareArchiveContext config groupedPosts
     let html = render (templateFolder <> "/archive.html") context
     writeTextFile UTF8 (tmpFolder <> "/archive.html") html
 
@@ -222,7 +223,7 @@ write404Page :: AppM Unit
 write404Page = do
   config <- ask
   liftAppM $ do
-    let context = prepare404Context (fromMaybe "" config.domain)
+    let context = prepare404Context config
     let html = render (templateFolder <> "/404.html") context
     writeTextFile UTF8 (tmpFolder <> "/404.html") html
 
@@ -254,7 +255,8 @@ initApp = do
     writeTextFile UTF8 (templateFolder <> "/style.css") styleTemplate
     Logs.logInfo "Generating feed.xml..."
     when (isNothing config.domain) $ throwError $ error "SITE_URL is required. Set it in your environment (e.g. SITE_URL=https://my.blog)."
-    writeTextFile UTF8 (templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "" config.domain))
+    when (isNothing config.siteName) $ throwError $ error "SITE_NAME is required. Set it in your environment (e.g. SITE_NAME=\"My Blog\")."
+    writeTextFile UTF8 (templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "" config.domain) (fromMaybe "" config.siteName))
     Logs.logInfo "Generating archive.html..."
     writeTextFile UTF8 (templateFolder <> "/archive.html") archiveHtmlTemplate
     Logs.logInfo "Generating 404.html..."

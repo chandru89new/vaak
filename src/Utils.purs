@@ -41,34 +41,37 @@ foreign import formatDate :: String -> String -> String
 foreign import md2RawFormattedData :: String -> RawFormattedMarkdownData
 
 -- Context preparation functions (pure PureScript)
-preparePostContext :: FrontMatterS -> String -> String -> Foreign
-preparePostContext fm content siteUrl = unsafeToForeign
+preparePostContext :: Config -> FrontMatterS -> String -> Foreign
+preparePostContext config fm content = unsafeToForeign
   { title: fm.title
   , date: formatDate "MMM DD, YYYY" fm.date
   , slug: fm.slug
   , content: content
-  , siteUrl: siteUrl
+  , siteUrl: fromMaybe "" config.domain
+  , siteName: fromMaybe "" config.siteName
   }
 
-prepareIndexContext :: Array FrontMatterS -> String -> Foreign
-prepareIndexContext posts siteUrl = unsafeToForeign
+prepareIndexContext :: Config -> Array FrontMatterS -> Foreign
+prepareIndexContext config posts = unsafeToForeign
   { allPosts: map formatPost posts
-  , siteUrl: siteUrl
+  , siteUrl: fromMaybe "" config.domain
+  , siteName: fromMaybe "" config.siteName
   }
   where
   formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug }
 
-prepareArchiveContext :: Array { year :: Int, posts :: Array FrontMatterS } -> String -> Foreign
-prepareArchiveContext groupedPosts siteUrl = unsafeToForeign
+prepareArchiveContext :: Config -> Array { year :: Int, posts :: Array FrontMatterS } -> Foreign
+prepareArchiveContext config groupedPosts = unsafeToForeign
   { postsByYear: map formatGroup groupedPosts
-  , siteUrl: siteUrl
+  , siteUrl: fromMaybe "" config.domain
+  , siteName: fromMaybe "" config.siteName
   }
   where
   formatGroup g = { year: g.year, posts: map formatPost g.posts }
   formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug }
 
-prepare404Context :: String -> Foreign
-prepare404Context siteUrl = unsafeToForeign { siteUrl: siteUrl }
+prepare404Context :: Config -> Foreign
+prepare404Context config = unsafeToForeign { siteUrl: fromMaybe "" config.domain, siteName: fromMaybe "" config.siteName }
 
 md2FormattedData :: String -> FormattedMarkdownData
 md2FormattedData s =
@@ -83,7 +86,8 @@ getConfig = liftEffect $ do
   outputFolder <- lookupEnv "OUTPUT_DIR" >>= (pure <$> fromMaybe defaultOutputFolder)
   contentFolder <- lookupEnv "POSTS_DIR" >>= (pure <$> fromMaybe defaultContentFolder)
   domain <- lookupEnv "SITE_URL" >>= (\v -> pure $ (dropLeadingSlash <$> v))
-  pure { domain, outputFolder, contentFolder }
+  siteName <- lookupEnv "SITE_NAME"
+  pure { domain, outputFolder, contentFolder, siteName }
 
 stringToStatus :: String -> Status
 stringToStatus s = case toLower s of
