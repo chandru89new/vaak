@@ -83,6 +83,7 @@ helpText =
 buildSite :: AppM Unit
 buildSite = do
   config <- ask
+  when (isNothing config.domain) $ liftAppM $ throwError $ error "SITE_URL is required. Set it in your environment (e.g. SITE_URL=https://my.blog)."
   liftAppM $ Logs.logInfo "Starting..."
   liftAppM $ createFolderIfNotPresent tmpFolder
   { published, draft } <- generatePostsHTML
@@ -252,8 +253,8 @@ initApp = do
     Logs.logInfo "Generating style.css..."
     writeTextFile UTF8 (templateFolder <> "/style.css") styleTemplate
     Logs.logInfo "Generating feed.xml..."
-    when (isNothing config.domain) $ Logs.logWarning "feed.xml template is missing domain because you have not set SITE_URL in the environment. Manually edit the feed.xml file to add the correct domain. When building the site, you will need to set the domain in your shell enviroment. (e.g SITE_URL=https://my.blog)"
-    writeTextFile UTF8 (templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "https://my.blog" config.domain))
+    when (isNothing config.domain) $ throwError $ error "SITE_URL is required. Set it in your environment (e.g. SITE_URL=https://my.blog)."
+    writeTextFile UTF8 (templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "" config.domain))
     Logs.logInfo "Generating archive.html..."
     writeTextFile UTF8 (templateFolder <> "/archive.html") archiveHtmlTemplate
     Logs.logInfo "Generating 404.html..."
