@@ -64,8 +64,6 @@ slug: my-first-post
 Your post content here...
 ```
 
-Note: The `slug` should be the same as the filename without the `.md` extension.
-
 ## Configuration
 
 vāk uses environment variables for configuration:
@@ -87,7 +85,7 @@ When you run `vaak.cjs init`, the following templates are created in your templa
 - `archive.html` - Archive page template
 - `404.html` - 404 error page template
 - `feed.xml` - RSS feed template
-- `style.css` - Default stylesheet
+- `style.css` - Default stylesheet (Tailwind supported automatically)
 - `post.md` - Markdown template for new posts
 
 ### Available Data
@@ -95,6 +93,7 @@ When you run `vaak.cjs init`, the following templates are created in your templa
 Each template has access to specific data when rendered:
 
 **index.html** (Homepage)
+
 - `allPosts` - Array of all published posts (sorted by date, newest first), each with:
   - `title` - Post title
   - `date` - Formatted date (MMM DD, YYYY)
@@ -102,6 +101,7 @@ Each template has access to specific data when rendered:
 - `siteUrl` - Your site URL (from SITE_URL env variable)
 
 **post.html** (Individual Posts)
+
 - `title` - Post title
 - `date` - Formatted date (MMM DD, YYYY)
 - `slug` - Post URL slug
@@ -109,6 +109,7 @@ Each template has access to specific data when rendered:
 - `siteUrl` - Your site URL
 
 **archive.html** (Archive Page)
+
 - `postsByYear` - Array of year groups, each with:
   - `year` - Year number
   - `posts` - Array of posts in that year, each with:
@@ -118,6 +119,7 @@ Each template has access to specific data when rendered:
 - `siteUrl` - Your site URL
 
 **404.html** (404 Error Page)
+
 - `siteUrl` - Your site URL
 
 ### Nunjucks Syntax
