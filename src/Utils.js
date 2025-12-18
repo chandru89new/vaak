@@ -1,8 +1,6 @@
 import matter from "gray-matter";
 import dayjs from "dayjs";
 import MarkdownIt from "markdown-it";
-import yaml from "js-yaml";
-import fs from "fs";
 import markdownItAnchor from "markdown-it-anchor";
 
 const formatDate = (format) => (dateString) =>
@@ -29,12 +27,4 @@ const md2RawFormattedData = (string) => {
   };
 };
 
-const getCategoriesJson = (postsDir) => {
-  try {
-    return yaml.load(fs.readFileSync(`./${postsDir}/categories.yml`, "utf-8"));
-  } catch {
-    return [];
-  }
-};
-
-export { md2RawFormattedData, formatDate, getCategoriesJson };
+export { md2RawFormattedData, formatDate };

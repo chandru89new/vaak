@@ -7,6 +7,7 @@ esbuild
     platform: "node",
     outfile: "dist/app.cjs",
     format: "cjs",
+    external: ["fsevents"],
     // target: "node16",
     banner: {
       js: "#!/usr/bin/env node\n(function() {"

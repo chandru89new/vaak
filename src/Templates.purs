@@ -2,19 +2,16 @@ module Templates where
 
 import Prelude
 
-import Data.Maybe (Maybe)
-
 indexHtmlTemplate :: String
 indexHtmlTemplate =
-  """
-  <!DOCTYPE html>
+  """<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>my blog</title>
+  <title>{{ siteName }}</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -23,7 +20,7 @@ indexHtmlTemplate =
   <div>
     <h3 id="home-page-logo">
       <a href="/">
-        my blog
+        {{ siteName }}
       </a>
     </h3>
     <header>
@@ -32,7 +29,13 @@ indexHtmlTemplate =
     <article id="archive_container">
       <section>
         <h3>Most recently</h3>
-        <div>{{recent_posts}}</div>
+        <div>
+          <ul>
+            {% for post in allPosts %}{% if loop.index <= 5 %}
+            <li><a href="./{{ post.slug }}">{{ post.title }}</a> &mdash; <span class="date">{{ post.date }}</span></li>
+            {% endif %}{% endfor %}
+          </ul>
+        </div>
       </section>
       <section>
         <h3>Archives</h3>
@@ -49,20 +52,18 @@ indexHtmlTemplate =
   </div>
 </body>
 
-</html>
-"""
+</html>"""
 
 postHtmlTemplate :: String
 postHtmlTemplate =
-  """
-  <!DOCTYPE html>
+  """<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{page_title}} — my blog</title>
+  <title>{{ title }} — {{ siteName }}</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -71,14 +72,14 @@ postHtmlTemplate =
   <div>
     <h3 id="logo">
       <a href="/">
-        &larr; my blog
+        &larr; {{ siteName }}
       </a>
     </h3>
     <header>
-      <h1>{{title}}</h1>
-      <div class="date">{{date}}</div>
+      <h1>{{ title }}</h1>
+      <div class="date">{{ date }}</div>
     </header>
-    <article>{{content}}</article>
+    <article>{{ content | safe }}</article>
     <footer>
       <a href="/">&larr; blog</a>
       <span>&bull;</span>
@@ -98,8 +99,7 @@ postHtmlTemplate =
   </script>
 </body>
 
-</html>
-"""
+</html>"""
 
 postMdTemplate :: String
 postMdTemplate =
@@ -113,30 +113,22 @@ status: draft
 Write your post here.
 """
 
-feedTemplate :: String -> String
-feedTemplate domain =
-  one <> "<link>" <> domain <> "/</link>" <> two <> "<atom:link href=\"" <> domain <> "/feed.xml\" rel=\"self\" type=\"application/rss+xml\"" <> "/>" <> three 
+feedTemplate :: String -> String -> String
+feedTemplate domain siteName =
+  one <> "<link>" <> domain <> "/</link>" <> two <> "<atom:link href=\"" <> domain <> "/feed.xml\" rel=\"self\" type=\"application/rss+xml\"" <> "/>" <> three
   where
-    one = """<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>my blog — RSS Feed</title>"""
-    two = """<description>this is my blog</description>
+  one = """<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>""" <> siteName <> """ — RSS Feed</title>"""
+  two =
+    """<description>""" <> siteName <> """</description>
     <lastBuildDate>{{last_updated_date}}</lastBuildDate>"""
-    three = """{{feed_items}}
+  three =
+    """{{feed_items}}
   </channel>
 </rss>"""
---   """<?xml version="1.0" encoding="utf-8"?>
--- <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
---   <channel>
---     <title>my blog — RSS Feed</title>
---     <link>https://my.blog.com/</link>
---     <description>this is my blog</description>
---     <lastBuildDate>{{last_updated_date}}</lastBuildDate>
---     <atom:link href="https://my.blog.com/feed.xml" rel="self" type="application/rss+xml" />
---     """
 
 styleTemplate :: String
 styleTemplate =
   """@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,100..900,50;1,9..144,100..900,50&display=swap");
-@import url("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css");
 
 @import "tailwindcss";
 
@@ -262,15 +254,16 @@ hr {
   @apply text-xs;
 }"""
 
-notFoundTemplate :: String
-notFoundTemplate = """<!DOCTYPE html>
+notFoundHtmlTemplate :: String
+notFoundHtmlTemplate =
+  """<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>my blog</title>
+  <title>Not Found — {{ siteName }}</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -279,7 +272,7 @@ notFoundTemplate = """<!DOCTYPE html>
   <div>
     <h3 id="home-page-logo">
       <a href="/">
-        my blog
+        {{ siteName }}
       </a>
     </h3>
     <header>
@@ -289,7 +282,7 @@ notFoundTemplate = """<!DOCTYPE html>
         <p>Uh, that page doesn't exist. Sorry about that.</p>
       </section>
       <div>
-        <a href="./archive.html">See the full archive &rarr;</a>
+        <a href="./archive">See the full archive &rarr;</a>
       </div>
     </article>
     <footer>
@@ -301,14 +294,15 @@ notFoundTemplate = """<!DOCTYPE html>
 </html>"""
 
 archiveHtmlTemplate :: String
-archiveHtmlTemplate = """<!DOCTYPE html>
+archiveHtmlTemplate =
+  """<!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Archives — my blog</title>
+  <title>Archives — {{ siteName }}</title>
   <link href="./style.css" rel="stylesheet" />
   <link href="./images/favicon.png" rel="icon" />
 </head>
@@ -317,13 +311,24 @@ archiveHtmlTemplate = """<!DOCTYPE html>
   <div>
     <h3 id="logo">
       <a href="/">
-        &larr; my blog
+        &larr; {{ siteName }}
       </a>
     </h3>
     <header>
       <h1>Archive</h1>
     </header>
-    <article id="archive_container">{{content}}</article>
+    <article id="archive_container">
+      {% for group in postsByYear %}
+      <section>
+        <h3>{{ group.year }}</h3>
+        <ul>
+          {% for post in group.posts %}
+          <li><a href="/{{ post.slug }}">{{ post.title }}</a> &mdash; <span class="date">{{ post.date }}</span></li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endfor %}
+    </article>
     <footer>
       <a href="/">&larr; blog</a>
       <span>&bull;</span>

@@ -41,13 +41,13 @@ vāk provides several commands to manage your static blog:
 ```
 your-blog/
 ├── posts/          # Your markdown posts
-├── templates/      # HTML templates (this is created by `vaak.cjs init` and you can edit the contents of the files)
+├── templates/      # Nunjucks templates (.html files - created by `vaak.cjs init`)
 ├── images/         # Image assets
 ├── js/             # JavaScript files
 └── public/         # Generated blog
 ```
 
-You can use any directory name for the posts, the templates and the public (output) folders. Just configure them through shell environment variables ([see configuration](#configuration)).
+You can configure the posts and output directories through environment variables ([see configuration](#configuration)). The `templates/` folder is fixed by convention.
 
 ## Writing Posts
 
@@ -64,17 +64,100 @@ slug: my-first-post
 Your post content here...
 ```
 
-Note: The `slug` should be the same as the filename without the `.md` extension.
-
 ## Configuration
 
 vāk uses environment variables for configuration:
 
-- `TEMPLATE_DIR`: Directory containing HTML templates (default: "./templates")
+- `SITE_URL`: The URL of your blog (e.g., `https://yourname.com/blog`). **Required.**
+- `SITE_NAME`: The name of your blog (e.g., `My Blog`). **Required.**
 - `OUTPUT_DIR`: Directory where the built blog will be generated (default: "./public")
 - `POSTS_DIR`: Directory containing your markdown posts (default: "./posts")
-- `RECENT_POSTS`: Number of recent posts to show on homepage (default: 5)
-- `SITE_URL`: The domain name of the blog. (eg. `https://yourname.com/blog`) This is required for generating RSS feed anytime you build the blog.
+
+## Templating
+
+vāk uses [Nunjucks](https://mozilla.github.io/nunjucks/) for templating, giving you full control over your blog's HTML structure.
+
+### Template Files
+
+When you run `vaak.cjs init`, the following templates are created in your templates directory:
+
+- `index.html` - Homepage template
+- `post.html` - Individual post template
+- `archive.html` - Archive page template
+- `404.html` - 404 error page template
+- `feed.xml` - RSS feed template
+- `style.css` - Default stylesheet (Tailwind supported automatically)
+- `post.md` - Markdown template for new posts
+
+### Available Data
+
+Each template has access to specific data when rendered:
+
+**index.html** (Homepage)
+
+- `allPosts` - Array of all published posts (sorted by date, newest first), each with:
+  - `title` - Post title
+  - `date` - Formatted date (MMM DD, YYYY)
+  - `slug` - Post URL slug
+- `siteUrl` - Your site URL
+- `siteName` - Your site name
+
+**post.html** (Individual Posts)
+
+- `title` - Post title
+- `date` - Formatted date (MMM DD, YYYY)
+- `slug` - Post URL slug
+- `content` - Rendered HTML content (use `| safe` filter to render unescaped)
+- `siteUrl` - Your site URL
+- `siteName` - Your site name
+
+**archive.html** (Archive Page)
+
+- `postsByYear` - Array of year groups, each with:
+  - `year` - Year number
+  - `posts` - Array of posts in that year, each with:
+    - `title` - Post title
+    - `date` - Formatted date (MMM DD, YYYY)
+    - `slug` - Post URL slug
+- `siteUrl` - Your site URL
+- `siteName` - Your site name
+
+**404.html** (404 Error Page)
+
+- `siteUrl` - Your site URL
+- `siteName` - Your site name
+
+### Nunjucks Syntax
+
+Templates use standard Nunjucks syntax. Common patterns:
+
+```nunjucks
+<!-- Display a variable -->
+{{ title }}
+
+<!-- Display unescaped HTML (for rendered markdown content) -->
+{{ content | safe }}
+
+<!-- Loop through posts -->
+{% for post in allPosts %}
+  <li><a href="./{{ post.slug }}">{{ post.title }}</a> - {{ post.date }}</li>
+{% endfor %}
+
+<!-- Limit to first 5 posts -->
+{% for post in allPosts %}{% if loop.index <= 5 %}
+  <li>{{ post.title }}</li>
+{% endif %}{% endfor %}
+
+<!-- Nested loops (archive page) -->
+{% for group in postsByYear %}
+  <h3>{{ group.year }}</h3>
+  {% for post in group.posts %}
+    <li>{{ post.title }}</li>
+  {% endfor %}
+{% endfor %}
+```
+
+For more information on Nunjucks syntax and features, visit the [Nunjucks documentation](https://mozilla.github.io/nunjucks/templating.html).
 
 ## Colophon
 
