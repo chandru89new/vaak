@@ -159,6 +159,10 @@ Templates use standard Nunjucks syntax. Common patterns:
 
 For more information on Nunjucks syntax and features, visit the [Nunjucks documentation](https://mozilla.github.io/nunjucks/templating.html).
 
+## Example
+
+Check out the `./example` folder.
+
 ## Colophon
 
 वाक् (vāk) is Sanskrit for "speech" or "voice".
