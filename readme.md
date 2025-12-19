@@ -13,7 +13,11 @@ Example: [`https://notes.druchan.com`](https://notes.druchan.com)
 chmod +x vaak.cjs
 ```
 
-3. (Optional) Move it to a directory in your PATH for easier access
+3. (Optional) Move it to a directory in your PATH for easier access or add an alias in your `bashrc` that points to this file.
+
+```
+alias vaak=/path/to/vaak.cjs
+```
 
 ## Usage
 
@@ -24,7 +28,8 @@ vāk provides several commands to manage your static blog:
 ./vaak.cjs init
 
 # Create a new post
-./vaak.cjs new [slug]
+# eg. ./vaak.cjs new my-first-post
+./vaak.cjs new [slug] 
 
 # Build the blog
 ./vaak.cjs build
