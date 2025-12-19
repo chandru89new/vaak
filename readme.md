@@ -29,7 +29,7 @@ vāk provides several commands to manage your static blog:
 
 # Create a new post
 # eg. ./vaak.cjs new my-first-post
-./vaak.cjs new [slug] 
+./vaak.cjs new [slug]
 
 # Build the blog
 ./vaak.cjs build
@@ -163,6 +163,10 @@ Templates use standard Nunjucks syntax. Common patterns:
 ```
 
 For more information on Nunjucks syntax and features, visit the [Nunjucks documentation](https://mozilla.github.io/nunjucks/templating.html).
+
+## Example
+
+Check out the `./example` folder.
 
 ## Colophon
 
