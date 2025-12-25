@@ -4,13 +4,14 @@ import Prelude
 
 import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Monad.Reader (ReaderT(..), runReaderT)
-import Data.Array (last)
+import Data.Array (elem, last)
 import Data.Either (Either(..))
 import Data.Maybe (fromMaybe)
 import Data.String (take, length, toLower)
 import Data.String.CodeUnits (toCharArray)
 import Effect.Aff (Aff, Error, try)
 import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Class.Console (log, logShow)
 import Foreign (Foreign, unsafeToForeign)
 import Node.FS.Aff (mkdir, readdir)
 import Node.Path (FilePath)
@@ -107,9 +108,13 @@ dropLeadingSlash :: String -> String
 dropLeadingSlash str =
   if endsWith '/' str then take (length str - 1) str else str
 
-
 runAppM :: forall a. Config -> AppM a -> Aff (Either Error a)
 runAppM config app = runExceptT $ runReaderT app config
 
 liftAppM :: forall a. Aff a -> AppM a
 liftAppM aff = ReaderT \_ -> ExceptT $ try $ aff
+
+fileNameExists :: String -> FilePath -> AppM Boolean
+fileNameExists fileName path = liftAppM $ do
+  contents <- readdir path
+  pure $ elem (fileName <> ".md") contents

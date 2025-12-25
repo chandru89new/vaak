@@ -28,11 +28,11 @@ import Node.ChildProcess (defaultExecSyncOptions, execSync)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Process (argv, exit)
-import RssGenerator as Rss
 import Nunjucks (render)
+import RssGenerator as Rss
 import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundHtmlTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Command(..), Config, Status(..), FrontMatterS)
-import Utils (createFolderIfNotPresent, formatDate, getConfig, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
+import Utils (createFolderIfNotPresent, fileNameExists, formatDate, getConfig, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -41,7 +41,7 @@ main = do
   case cmd of
     Test -> test
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.9.0"
+    ShowVersion -> log $ "v0.9.1"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
@@ -229,8 +229,11 @@ write404Page = do
 
 createNewPost :: String -> AppM Unit
 createNewPost slug = do
+  when (contains (Pattern "/") slug || contains (Pattern "\\") slug) $ throwError $ error "Slug cannot contain '/' or '\\' characters."
   config <- ask
+  fileExists <- fileNameExists slug config.contentFolder
   liftAppM $ do
+    when fileExists $ throwError $ error $ "Cannot create a new file because there's one already with the same name."
     newPostTemplateContents <- readTextFile UTF8 (templateFolder <> "/post.md")
     today <- pure $ formatDate "YYYY-MM-DD" ""
     replaced <-
