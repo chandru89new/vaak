@@ -4,7 +4,7 @@ import Prelude
 
 import Cache (CacheData, needsInvalidation, readCacheData)
 import Cache as Cache
-import Control.Monad.Except (ExceptT(..))
+import Control.Monad.Except (ExceptT(..), throwError)
 import Control.Monad.Reader (ask, lift)
 import Control.Parallel (parTraverse, parTraverse_)
 import Data.Array (drop, filter, foldl, head, sortBy, take)
@@ -32,7 +32,7 @@ import Nunjucks (render)
 import RssGenerator as Rss
 import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundHtmlTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Command(..), Config, Status(..), FrontMatterS)
-import Utils (createFolderIfNotPresent, fileNameExists, formatDate, getConfig, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
+import Utils (createFolderIfNotPresent, fileNameExists, folderExists, formatDate, getConfig, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -41,7 +41,7 @@ main = do
   case cmd of
     Test -> test
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.9.1"
+    ShowVersion -> log $ "v0.9.2"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
@@ -245,6 +245,9 @@ createNewPost slug = do
 initApp :: AppM Unit
 initApp = do
   config <- ask
+  alreadyInited <- folderExists templateFolder
+  when alreadyInited $ do
+    throwError $ error $ "Looks like you've already initialized the project. Please remove the '" <> templateFolder <> "' folder and try again."
   liftAppM $ do
     createFolderIfNotPresent templateFolder
     createFolderIfNotPresent config.contentFolder
@@ -266,7 +269,6 @@ initApp = do
     writeTextFile UTF8 (templateFolder <> "/404.html") notFoundHtmlTemplate
     Logs.logInfo "Generating new post markdown template..."
     writeTextFile UTF8 (templateFolder <> "/post.md") postMdTemplate
-    Logs.logSuccess "Done! You can now edit these templates."
 
 removeDraftsFromOutput :: Array FrontMatterS -> AppM Unit
 removeDraftsFromOutput drafts = do
