@@ -118,3 +118,10 @@ fileNameExists :: String -> FilePath -> AppM Boolean
 fileNameExists fileName path = liftAppM $ do
   contents <- readdir path
   pure $ elem (fileName <> ".md") contents
+
+folderExists :: FilePath -> AppM Boolean
+folderExists path = liftAppM $ do
+  res <- try $ readdir path
+  case res of
+    Right _ -> pure true
+    Left _ -> pure false
