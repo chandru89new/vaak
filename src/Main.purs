@@ -23,7 +23,7 @@ import Node.ChildProcess (execSync, execSync')
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.FS.Sync (exists)
-import Node.Process (argv, exit')
+import Node.Process (argv, exit, exit')
 import Nunjucks (renderTemplate)
 import RssGenerator as Rss
 import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundHtmlTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
@@ -214,29 +214,31 @@ initApp :: AppM Unit
 initApp = do
   config <- ask
   alreadyInited <- folderExists templateFolder
-  when alreadyInited $ do
-    throwError $ error $ "Looks like you've already initialized the project. Please remove the '" <> templateFolder <> "' folder and try again."
   liftAppM $ do
-    createFolderIfNotPresent templateFolder
-    createFolderIfNotPresent config.contentFolder
-    createFolderIfNotPresent "images"
-    createFolderIfNotPresent "js"
-    Logs.logInfo "Generating index.html..."
-    writeTextFile UTF8 (templateFolder <> "/index.html") indexHtmlTemplate
-    Logs.logInfo "Generating post.html..."
-    writeTextFile UTF8 (templateFolder <> "/post.html") postHtmlTemplate
-    Logs.logInfo "Generating style.css..."
-    writeTextFile UTF8 (templateFolder <> "/style.css") styleTemplate
-    Logs.logInfo "Generating feed.xml..."
     when (isNothing config.domain) $ throwError $ error "SITE_URL is required. Set it in your environment (e.g. SITE_URL=https://my.blog)."
     when (isNothing config.siteName) $ throwError $ error "SITE_NAME is required. Set it in your environment (e.g. SITE_NAME=\"My Blog\")."
-    writeTextFile UTF8 (templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "" config.domain) (fromMaybe "" config.siteName))
-    Logs.logInfo "Generating archive.html..."
-    writeTextFile UTF8 (templateFolder <> "/archive.html") archiveHtmlTemplate
-    Logs.logInfo "Generating 404.html..."
-    writeTextFile UTF8 (templateFolder <> "/404.html") notFoundHtmlTemplate
-    Logs.logInfo "Generating new post markdown template..."
-    writeTextFile UTF8 (templateFolder <> "/post.md") postMdTemplate
+    if alreadyInited then do
+      Logs.logWarning $ "Looks like you've already initialized the project. Remove the '" <> templateFolder <> "' and try again."
+      liftEffect $ exit
+    else do
+      createFolderIfNotPresent templateFolder
+      createFolderIfNotPresent config.contentFolder
+      createFolderIfNotPresent "images"
+      createFolderIfNotPresent "js"
+      Logs.logInfo "Generating index.html..."
+      writeTextFile UTF8 (templateFolder <> "/index.html") indexHtmlTemplate
+      Logs.logInfo "Generating post.html..."
+      writeTextFile UTF8 (templateFolder <> "/post.html") postHtmlTemplate
+      Logs.logInfo "Generating style.css..."
+      writeTextFile UTF8 (templateFolder <> "/style.css") styleTemplate
+      Logs.logInfo "Generating feed.xml..."
+      writeTextFile UTF8 (templateFolder <> "/feed.xml") (feedTemplate (fromMaybe "" config.domain) (fromMaybe "" config.siteName))
+      Logs.logInfo "Generating archive.html..."
+      writeTextFile UTF8 (templateFolder <> "/archive.html") archiveHtmlTemplate
+      Logs.logInfo "Generating 404.html..."
+      writeTextFile UTF8 (templateFolder <> "/404.html") notFoundHtmlTemplate
+      Logs.logInfo "Generating new post markdown template..."
+      writeTextFile UTF8 (templateFolder <> "/post.md") postMdTemplate
 
 removeDraftsFromOutput :: Array FrontMatterS -> AppM Unit
 removeDraftsFromOutput drafts = do
