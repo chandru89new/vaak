@@ -106,6 +106,12 @@ Each template has access to specific data when rendered:
   - `slug` - Post URL slug
 - `siteUrl` - Your site URL
 - `siteName` - Your site name
+- `postsByYear` - Array of year groups, each with:
+  - `year` - Year number
+  - `posts` - Array of posts in that year, each with:
+    - `title` - Post title
+    - `date` - Formatted date (MMM DD, YYYY)
+    - `slug` - Post URL slug
 
 **post.html** (Individual Posts)
 

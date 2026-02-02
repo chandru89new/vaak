@@ -4,15 +4,20 @@ import Prelude
 
 import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Monad.Reader (ReaderT(..), runReaderT)
-import Data.Array (elem, last)
+import Data.Array (elem, foldl, last, sortBy)
+import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Maybe (fromMaybe)
-import Data.String (take, length, toLower)
+import Data.Int (fromString)
+import Data.Map (Map)
+import Data.Map as Map
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.String (length, split, take, toLower, Pattern(..))
 import Data.String.CodeUnits (toCharArray)
+import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Error, try)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Class.Console (log, logShow)
 import Foreign (Foreign, unsafeToForeign)
+import Node.ChildProcess (ExecSyncOptions)
 import Node.FS.Aff (mkdir, readdir)
 import Node.Path (FilePath)
 import Node.Process (lookupEnv)
@@ -57,6 +62,7 @@ prepareIndexContext config posts = unsafeToForeign
   { allPosts: map formatPost posts
   , siteUrl: fromMaybe "" config.domain
   , siteName: fromMaybe "" config.siteName
+  , postsByYear: map (\yearPosts -> { year: yearPosts.year, posts: map formatPost yearPosts.posts }) $ groupPostsByYearArray posts
   }
   where
   formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug }
@@ -125,3 +131,46 @@ folderExists path = liftAppM $ do
   case res of
     Right _ -> pure true
     Left _ -> pure false
+
+groupPostsByYearArray :: Array FrontMatterS -> Array { year :: Int, posts :: Array FrontMatterS }
+groupPostsByYearArray posts =
+  let
+    grouped = groupPostsByYear posts
+    asList = Map.toUnfoldable grouped # sortBy (\(Tuple a1 _) (Tuple a2 _) -> if a1 > a2 then LT else GT)
+  in
+    map (\(Tuple year ps) -> { year, posts: ps }) asList
+
+groupPostsByYear :: Array (FrontMatterS) -> Map Int (Array (FrontMatterS))
+groupPostsByYear posts = foldl foldFn Map.empty posts
+  where
+  foldFn :: (Map Int (Array (FrontMatterS))) -> (FrontMatterS) -> Map Int (Array (FrontMatterS))
+  foldFn b a =
+    let
+      updateFn v = Just $ Array.snoc (fromMaybe [] v) a
+
+      year = extractYear a.date
+    in
+      case year of
+        Nothing -> b
+        Just y -> Map.alter updateFn y b
+
+  extractYear dateString =
+    split (Pattern "-") dateString
+      # Array.head
+      # map (fromString)
+      # join
+
+defaultExecSyncOptions :: ExecSyncOptions
+defaultExecSyncOptions =
+  { cwd: Nothing
+  , input: Nothing
+  , appendStdio: Nothing
+  , env: Nothing
+  , gid: Nothing
+  , killSignal: Nothing
+  , maxBuffer: Nothing
+  , shell: Nothing
+  , timeout: Nothing
+  , uid: Nothing
+  , windowsHide: Nothing
+  }

@@ -13,7 +13,7 @@ import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, try)
 import Effect.Class (liftEffect)
 import Node.Buffer (toString)
-import Node.ChildProcess (defaultExecSyncOptions, execSync)
+import Node.ChildProcess (execSync)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.Path (FilePath)
@@ -29,7 +29,7 @@ import Utils (getConfig, liftAppM)
 --   slugs = [ "trust-systems", "use-interval-hook" ]
 getStat :: FilePath -> String -> Aff ({ filename :: String, stat :: String })
 getStat contentsFolder filename = do
-  buf <- try $ liftEffect $ execSync ("stat -f \"%Sm %Sc\" -n " <> contentsFolder <> "/" <> filename) defaultExecSyncOptions
+  buf <- try $ liftEffect $ execSync ("stat -f \"%Sm %Sc\" -n " <> contentsFolder <> "/" <> filename)
   case buf of
     Left _ -> pure $ { filename, stat: "" }
     Right buffer -> do

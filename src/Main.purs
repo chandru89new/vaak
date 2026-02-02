@@ -4,18 +4,13 @@ import Prelude
 
 import Cache (CacheData, needsInvalidation, readCacheData)
 import Cache as Cache
-import Control.Monad.Except (ExceptT(..), throwError)
+import Control.Monad.Except (ExceptT(..))
 import Control.Monad.Reader (ask, lift)
 import Control.Parallel (parTraverse, parTraverse_)
-import Data.Array (drop, filter, foldl, head, sortBy, take)
-import Data.Array as Array
+import Data.Array (drop, filter, head, sortBy, take)
 import Data.Either (Either(..))
-import Data.Int (fromString)
-import Data.Map (Map)
-import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
-import Data.String (Pattern(..), Replacement(..), contains, replaceAll, split)
-import Data.Tuple (Tuple(..))
+import Data.String (Pattern(..), Replacement(..), contains, replaceAll)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_, throwError, try)
 import Effect.Class (liftEffect)
@@ -24,15 +19,16 @@ import Effect.Console (logShow)
 import Effect.Exception (Error, error)
 import Logs as Logs
 import Node.Buffer (Buffer)
-import Node.ChildProcess (defaultExecSyncOptions, execSync)
+import Node.ChildProcess (execSync, execSync')
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff (readTextFile, readdir, writeTextFile)
-import Node.Process (argv, exit)
-import Nunjucks (render)
+import Node.FS.Sync (exists)
+import Node.Process (argv, exit')
+import Nunjucks (renderTemplate)
 import RssGenerator as Rss
 import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundHtmlTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
 import Types (AppM, Command(..), Config, Status(..), FrontMatterS)
-import Utils (createFolderIfNotPresent, fileNameExists, folderExists, formatDate, getConfig, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
+import Utils (createFolderIfNotPresent, defaultExecSyncOptions, fileNameExists, folderExists, formatDate, getConfig, groupPostsByYearArray, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -41,7 +37,7 @@ main = do
   case cmd of
     Test -> test
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.9.2"
+    ShowVersion -> log $ "v0.9.3"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
@@ -54,20 +50,20 @@ main = do
       case res of
         Left err -> do
           _ <- Logs.logError ("Could not create a new post: " <> show err)
-          liftEffect $ exit 1
+          liftEffect $ exit' 1
         Right _ -> Logs.logSuccess "Created new post. Happy writing!"
     Invalid -> do
       Logs.logError $ "Invalid command."
       log $ helpText
-      exit 1
+      exit' 1
     Build -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config buildSite
-      _ <- liftEffect $ try $ execSync ("rm -rf " <> tmpFolder) defaultExecSyncOptions
+      _ <- liftEffect $ try $ execSync ("rm -rf " <> tmpFolder)
       case res of
         Left err -> do
           Logs.logError $ "Error when building the site: " <> show err
-          liftEffect $ exit 1
+          liftEffect $ exit' 1
         Right _ -> Logs.logSuccess $ "Site built and available in the " <> config.outputFolder <> " folder."
 
 helpText :: String
@@ -102,10 +98,10 @@ buildSite = do
   _ <- write404Page
   liftAppM $ Logs.logSuccess "404 page generated."
   liftAppM $ Logs.logInfo "Copying images folder..."
-  _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder) defaultExecSyncOptions
+  _ <- liftEffect $ execSync ("cp -r " <> "./images " <> tmpFolder)
   liftAppM $ Logs.logSuccess "images folder copied."
   liftAppM $ Logs.logInfo "Copying js folder..."
-  _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder) defaultExecSyncOptions
+  _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> "./js " <> tmpFolder)
   liftAppM $ Logs.logSuccess "js folder copied."
   liftAppM $ Logs.logInfo "Generating styles.css..."
   _ <- generateStyles
@@ -113,7 +109,7 @@ buildSite = do
   _ <- removeDraftsFromOutput draft
   liftAppM $ Logs.logInfo $ "Copying " <> tmpFolder <> " to " <> config.outputFolder
   _ <- liftAppM $ createFolderIfNotPresent config.outputFolder
-  _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder) defaultExecSyncOptions
+  _ <- liftAppM $ liftEffect $ execSync ("cp -r " <> tmpFolder <> "/* " <> config.outputFolder)
   liftAppM $ Logs.logSuccess "Copied."
   liftAppM $ Logs.logInfo "Updating cache..."
   _ <- Cache.writeCacheData
@@ -155,7 +151,7 @@ generatePostHTML config cache fileName = do
   where
   writePost fd = do
     let context = preparePostContext config fd.frontMatter fd.content
-    let html = render (templateFolder <> "/post.html") context
+    html <- renderTemplate (templateFolder <> "/post.html") context
     res <- try $ writeTextFile UTF8 (tmpFolder <> "/" <> fd.frontMatter.slug <> ".html") html
     case res of
       Left err -> Logs.logError $ "Could not write " <> fileName <> " to html (" <> show err <> ")"
@@ -164,8 +160,8 @@ generatePostHTML config cache fileName = do
 generateStyles :: AppM Buffer
 generateStyles = do
   liftAppM $ liftEffect $ do
-    _ <- execSync copyStyleFileToTmp defaultExecSyncOptions
-    execSync command options
+    _ <- execSync copyStyleFileToTmp
+    execSync' command (\_ -> options)
   where
   options = defaultExecSyncOptions { cwd = Just tmpFolder }
   copyStyleFileToTmp = "cp " <> templateFolder <> "/style.css " <> tmpFolder <> "/style1.css"
@@ -176,39 +172,11 @@ createHomePage sortedArrayofPosts = do
   config <- ask
   liftAppM $ do
     let context = prepareIndexContext config sortedArrayofPosts
-    let html = render (templateFolder <> "/index.html") context
+    html <- renderTemplate (templateFolder <> "/index.html") context
     writeTextFile UTF8 (tmpFolder <> "/index.html") html
 
 sortPosts :: Array FrontMatterS -> Array FrontMatterS
 sortPosts = sortBy (\a b -> if a.date < b.date then GT else LT)
-
-groupPostsByYear :: Array (FrontMatterS) -> Map Int (Array (FrontMatterS))
-groupPostsByYear posts = foldl foldFn Map.empty posts
-  where
-  foldFn :: (Map Int (Array (FrontMatterS))) -> (FrontMatterS) -> Map Int (Array (FrontMatterS))
-  foldFn b a =
-    let
-      updateFn v = Just $ Array.snoc (fromMaybe [] v) a
-
-      year = extractYear a.date
-    in
-      case year of
-        Nothing -> b
-        Just y -> Map.alter updateFn y b
-
-  extractYear dateString =
-    split (Pattern "-") dateString
-      # Array.head
-      # map (fromString)
-      # join
-
-groupPostsByYearArray :: Array FrontMatterS -> Array { year :: Int, posts :: Array FrontMatterS }
-groupPostsByYearArray posts =
-  let
-    grouped = groupPostsByYear posts
-    asList = Map.toUnfoldable grouped # sortBy (\(Tuple a1 _) (Tuple a2 _) -> if a1 > a2 then LT else GT)
-  in
-    map (\(Tuple year ps) -> { year, posts: ps }) asList
 
 writeArchiveByYearPage :: Array FrontMatterS -> AppM Unit
 writeArchiveByYearPage fds = do
@@ -216,7 +184,7 @@ writeArchiveByYearPage fds = do
   liftAppM $ do
     let groupedPosts = groupPostsByYearArray fds
     let context = prepareArchiveContext config groupedPosts
-    let html = render (templateFolder <> "/archive.html") context
+    html <- renderTemplate (templateFolder <> "/archive.html") context
     writeTextFile UTF8 (tmpFolder <> "/archive.html") html
 
 write404Page :: AppM Unit
@@ -224,7 +192,7 @@ write404Page = do
   config <- ask
   liftAppM $ do
     let context = prepare404Context config
-    let html = render (templateFolder <> "/404.html") context
+    html <- renderTemplate (templateFolder <> "/404.html") context
     writeTextFile UTF8 (tmpFolder <> "/404.html") html
 
 createNewPost :: String -> AppM Unit
@@ -277,8 +245,10 @@ removeDraftsFromOutput drafts = do
   where
   removeDraftHtml :: String -> FrontMatterS -> Aff Unit
   removeDraftHtml folder draftItem = do
-    _ <- try $ liftEffect $ execSync ("rm " <> folder <> "/" <> draftItem.slug <> ".html") defaultExecSyncOptions
-    pure unit
+    fileExists <- liftEffect $ exists ("" <> folder <> "/" <> draftItem.slug <> ".html")
+    when fileExists $ do
+      _ <- try $ liftEffect $ execSync ("rm " <> folder <> "/" <> draftItem.slug <> ".html")
+      pure unit
 
 test :: Effect Unit
 test = launchAff_ $ do

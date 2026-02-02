@@ -13,6 +13,7 @@ to generate this file without the comments in this block.
 { name = "my-project"
 , dependencies =
   [ "aff"
+  , "aff-promise"
   , "arrays"
   , "console"
   , "effect"
@@ -23,7 +24,7 @@ to generate this file without the comments in this block.
   , "maybe"
   , "node-buffer"
   , "node-child-process"
-  , "node-fs-aff"
+  , "node-fs"
   , "node-path"
   , "node-process"
   , "ordered-collections"
