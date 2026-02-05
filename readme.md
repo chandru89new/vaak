@@ -200,6 +200,12 @@ For more information on Nunjucks syntax and features, visit the [Nunjucks docume
 
 Check out the `./example` folder.
 
+## Upgrade notes
+
+### v0.9.x -> v0.10.0
+
+If you're upgrading to v0.10.x from v0.9.x, a new "collections" feature was added. Copy `example/templates/collection.html` into your templates folder and update it as you see fit.
+
 ## Colophon
 
 वाक् (vāk) is Sanskrit for "speech" or "voice".
