@@ -187,8 +187,8 @@ defaultExecSyncOptions =
 slugify :: String -> String
 slugify str = toLower str # replaceAll (Pattern " ") (Replacement "-")
 
-formatPost :: FrontMatterS -> { title :: String, date :: String, slug :: String, collections :: Array String }
-formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug, collections: fm.collections }
+formatPost :: FrontMatterS -> { title :: String, date :: String, slug :: String, collections :: Array Collection }
+formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug, collections: getUniqueCollections [ fm ] }
 
 getUniqueCollections :: Array FrontMatterS -> Array Collection
 getUniqueCollections ps = concatMap (\p -> p.collections) ps

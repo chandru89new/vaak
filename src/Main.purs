@@ -7,11 +7,9 @@ import Cache as Cache
 import Control.Monad.Except (ExceptT(..))
 import Control.Monad.Reader (ask, lift)
 import Control.Parallel (parTraverse, parTraverse_)
-import Data.Array (concatMap, drop, elem, filter, head, sortBy, take)
+import Data.Array (drop, elem, filter, head, sortBy, take)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
-import Data.Set (Set, toUnfoldable)
-import Data.Set as Set
 import Data.String (Pattern(..), Replacement(..), contains, replaceAll)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_, throwError, try)
@@ -39,7 +37,7 @@ main = do
   case cmd of
     Test -> test
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.10.0"
+    ShowVersion -> log $ "v0.10.1"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
