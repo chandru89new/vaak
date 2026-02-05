@@ -7,9 +7,11 @@ import Cache as Cache
 import Control.Monad.Except (ExceptT(..))
 import Control.Monad.Reader (ask, lift)
 import Control.Parallel (parTraverse, parTraverse_)
-import Data.Array (drop, filter, head, sortBy, take)
+import Data.Array (concatMap, drop, elem, filter, head, sortBy, take)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe, isNothing)
+import Data.Set (Set, toUnfoldable)
+import Data.Set as Set
 import Data.String (Pattern(..), Replacement(..), contains, replaceAll)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_, throwError, try)
@@ -26,9 +28,9 @@ import Node.FS.Sync (exists)
 import Node.Process (argv, exit, exit')
 import Nunjucks (renderTemplate)
 import RssGenerator as Rss
-import Templates (archiveHtmlTemplate, feedTemplate, indexHtmlTemplate, notFoundHtmlTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
-import Types (AppM, Command(..), Config, Status(..), FrontMatterS)
-import Utils (createFolderIfNotPresent, defaultExecSyncOptions, fileNameExists, folderExists, formatDate, getConfig, groupPostsByYearArray, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareIndexContext, preparePostContext, runAppM, templateFolder, tmpFolder)
+import Templates (archiveHtmlTemplate, collectionTemplate, feedTemplate, indexHtmlTemplate, notFoundHtmlTemplate, postHtmlTemplate, postMdTemplate, styleTemplate)
+import Types (AppM, Command(..), Config, FrontMatterS, Status(..), Collection)
+import Utils (createFolderIfNotPresent, defaultExecSyncOptions, fileNameExists, folderExists, formatDate, getConfig, getUniqueCollections, groupPostsByYearArray, liftAppM, md2FormattedData, prepare404Context, prepareArchiveContext, prepareCollectionContext, prepareIndexContext, preparePostContext, runAppM, slugify, templateFolder, tmpFolder)
 
 main :: Effect Unit
 main = do
@@ -37,7 +39,7 @@ main = do
   case cmd of
     Test -> test
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.9.3"
+    ShowVersion -> log $ "v0.10.0"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
@@ -88,6 +90,9 @@ buildSite = do
   liftAppM $ Logs.logInfo "Generating home page..."
   _ <- createHomePage published
   liftAppM $ Logs.logSuccess "Home page generated."
+  liftAppM $ Logs.logInfo "Generating collection pages..."
+  _ <- createCollectionsPages published
+  liftAppM $ Logs.logSuccess "Collection pages generated."
   liftAppM $ Logs.logInfo "Generating archive page..."
   _ <- writeArchiveByYearPage published
   liftAppM $ Logs.logSuccess "Archive page generated."
@@ -229,6 +234,8 @@ initApp = do
       writeTextFile UTF8 (templateFolder <> "/index.html") indexHtmlTemplate
       Logs.logInfo "Generating post.html..."
       writeTextFile UTF8 (templateFolder <> "/post.html") postHtmlTemplate
+      Logs.logInfo "Generating collection.html..."
+      writeTextFile UTF8 (templateFolder <> "/collection.html") collectionTemplate
       Logs.logInfo "Generating style.css..."
       writeTextFile UTF8 (templateFolder <> "/style.css") styleTemplate
       Logs.logInfo "Generating feed.xml..."
@@ -251,6 +258,28 @@ removeDraftsFromOutput drafts = do
     when fileExists $ do
       _ <- try $ liftEffect $ execSync ("rm " <> folder <> "/" <> draftItem.slug <> ".html")
       pure unit
+
+createCollectionsPages :: Array FrontMatterS -> AppM Unit
+createCollectionsPages publishedPosts = do
+  let
+    collections :: Array Collection
+    collections = getUniqueCollections publishedPosts
+  let
+    groupedByCollection :: Array { collection :: Collection, posts :: Array FrontMatterS }
+    groupedByCollection = map (\c -> { collection: c, posts: filterPostsByCollection c publishedPosts }) $ collections
+  parTraverse_ (createCollectionPage) groupedByCollection
+  where
+
+  filterPostsByCollection :: Collection -> Array FrontMatterS -> Array FrontMatterS
+  filterPostsByCollection collection ps = filter (\p -> elem collection.slug (map slugify p.collections)) ps
+
+  createCollectionPage :: { collection :: Collection, posts :: Array FrontMatterS } -> AppM Unit
+  createCollectionPage { collection, posts } = do
+    config <- ask
+    liftAppM $ do
+      let context = prepareCollectionContext config collection posts
+      html <- renderTemplate (templateFolder <> "/collection.html") context
+      writeTextFile UTF8 (tmpFolder <> "/collection-" <> collection.slug <> ".html") html
 
 test :: Effect Unit
 test = launchAff_ $ do

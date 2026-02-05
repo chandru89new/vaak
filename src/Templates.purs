@@ -119,7 +119,8 @@ feedTemplate domain siteName =
   where
   one = """<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>""" <> siteName <> """ — RSS Feed</title>"""
   two =
-    """<description>""" <> siteName <> """</description>
+    """<description>""" <> siteName <>
+      """</description>
     <lastBuildDate>{{last_updated_date}}</lastBuildDate>"""
   three =
     """{{feed_items}}
@@ -331,6 +332,49 @@ archiveHtmlTemplate =
     </article>
     <footer>
       <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+</body>
+
+</html>"""
+
+collectionTemplate :: String
+collectionTemplate =
+  """<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ collection }} — {{ siteName }}</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; {{ siteName }}
+      </a>
+    </h3>
+    <header>
+      <h1>Collection: {{ collection }}</h1>
+    </header>
+    <article>
+      <ul>
+        {% for post in posts %}
+        <li><a href="/{{ post.slug }}">{{ post.title }}</a> &mdash; <span class="date">{{ post.date }}</span></li>
+        {% endfor %}
+      </ul>
+    </article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
       <span>&bull;</span>
       <a href="/feed.xml">rss feed</a>
     </footer>

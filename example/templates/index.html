@@ -18,7 +18,7 @@
       </a>
     </h3>
     <header>
-
+      <p>this is my blog. there may be many other blogs. but this is my blog.</p>
     </header>
     <article id="archive_container">
       <section>
@@ -28,6 +28,16 @@
             {% for post in allPosts %}{% if loop.index <= 5 %} <li><a href="./{{ post.slug }}">{{ post.title }}</a>
               &mdash; <span class="date">{{ post.date }}</span></li>
               {% endif %}{% endfor %}
+          </ul>
+        </div>
+      </section>
+      <section>
+        <h3>Collections</h3>
+        <div>
+          <ul>
+            {% for collection in collections %}
+            <li><a href="/collection-{{ collection.slug }}">{{ collection.name }}</a></li>
+            {% endfor %}
           </ul>
         </div>
       </section>

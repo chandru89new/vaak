@@ -64,6 +64,7 @@ title: "My First Post" (use quotes for safety)
 date: 2025-04-14 (always YYYY-MM-DD format)
 status: published -- can be "draft", "published" or "unlisted". "draft" wont be generated in the build. "unlisted" wont be added to the homepage, archive page or the RSS feeds but can be accessed by the URL/slug.
 slug: my-first-post
+collections: On Blogging, Journal -- optional; must be a comma-separated list of strings
 ---
 
 Your post content here...
@@ -88,6 +89,7 @@ When you run `vaak.cjs init`, the following templates are created in your templa
 
 - `index.html` - Homepage template
 - `post.html` - Individual post template
+- `collection.html` - Collection page template
 - `archive.html` - Archive page template
 - `404.html` - 404 error page template
 - `feed.xml` - RSS feed template
@@ -104,20 +106,30 @@ Each template has access to specific data when rendered:
   - `title` - Post title
   - `date` - Formatted date (MMM DD, YYYY)
   - `slug` - Post URL slug
+  - `collections` - List of collections this post belongs to
 - `siteUrl` - Your site URL
 - `siteName` - Your site name
+- `collections` - Array of all collections, each with:
+  - `name` - Name of the collection (as in the markdown file)
+  - `slug` - A websafe/URL-friendly version to construct the collection page link. The collection page is at `collection-{slug}.html`
 - `postsByYear` - Array of year groups, each with:
   - `year` - Year number
   - `posts` - Array of posts in that year, each with:
     - `title` - Post title
     - `date` - Formatted date (MMM DD, YYYY)
     - `slug` - Post URL slug
+    - `collections` - List of collections this post belogs to, each with:
+      - `name` - Name of the collection (as in the markdown file)
+      - `slug` - A websafe/URL-friendly version to construct the collection page link. The collection page is at `collection-{slug}.html`
 
 **post.html** (Individual Posts)
 
 - `title` - Post title
 - `date` - Formatted date (MMM DD, YYYY)
 - `slug` - Post URL slug
+- `collections` - List of collections this post belongs to, each with:
+  - `name` - Name of the collection (as in the markdown file)
+  - `slug` - A websafe/URL-friendly version to construct the collection page link. The collection page is at `collection-{slug}.html`
 - `content` - Rendered HTML content (use `| safe` filter to render unescaped)
 - `siteUrl` - Your site URL
 - `siteName` - Your site name
@@ -129,9 +141,23 @@ Each template has access to specific data when rendered:
   - `posts` - Array of posts in that year, each with:
     - `title` - Post title
     - `date` - Formatted date (MMM DD, YYYY)
+    - `collections` - List of collections this post belongs to, each with:
+      - `name` - Name of the collection (as in the markdown file)
+      - `slug` - A websafe/URL-friendly version to construct the collection page link. The collection page is at `collection-{slug}.html`
     - `slug` - Post URL slug
 - `siteUrl` - Your site URL
 - `siteName` - Your site name
+
+**collection.html** (404 Error Page)
+
+- `collection` - Collection name and slug:
+  - `name` - Name of the collection (as in the markdown file)
+  - `slug` - A websafe/URL-friendly version to construct the collection page link. The collection page is at `collection-{slug}.html`
+- `posts` - Array of posts in this collection, each with:
+  - `title` - Post title
+  - `date` - Formatted date (MMM DD, YYYY)
+  - `collections` - List of collections this post belongs to
+  - `slug` - Post URL slug
 
 **404.html** (404 Error Page)
 

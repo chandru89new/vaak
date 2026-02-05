@@ -4,14 +4,16 @@ import Prelude
 
 import Control.Monad.Except (ExceptT(..), runExceptT)
 import Control.Monad.Reader (ReaderT(..), runReaderT)
-import Data.Array (elem, foldl, last, sortBy)
+import Data.Array (concatMap, elem, foldl, last, nubBy, sortBy)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Int (fromString)
 import Data.Map (Map)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String (length, split, take, toLower, Pattern(..))
+import Data.Set (toUnfoldable)
+import Data.Set as Set
+import Data.String (Pattern(..), Replacement(..), length, replaceAll, split, take, toLower)
 import Data.String.CodeUnits (toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect.Aff (Aff, Error, try)
@@ -21,7 +23,7 @@ import Node.ChildProcess (ExecSyncOptions)
 import Node.FS.Aff (mkdir, readdir)
 import Node.Path (FilePath)
 import Node.Process (lookupEnv)
-import Types (Config, FormattedMarkdownData, RawFormattedMarkdownData, Status(..), AppM, FrontMatterS)
+import Types (AppM, Config, FormattedMarkdownData, FrontMatterS, RawFormattedMarkdownData, Status(..), Collection)
 
 defaultOutputFolder :: String
 defaultOutputFolder = "./public"
@@ -53,6 +55,7 @@ preparePostContext config fm content = unsafeToForeign
   , date: formatDate "MMM DD, YYYY" fm.date
   , slug: fm.slug
   , content: content
+  , collections: getUniqueCollections (Array.singleton fm)
   , siteUrl: fromMaybe "" config.domain
   , siteName: fromMaybe "" config.siteName
   }
@@ -63,9 +66,16 @@ prepareIndexContext config posts = unsafeToForeign
   , siteUrl: fromMaybe "" config.domain
   , siteName: fromMaybe "" config.siteName
   , postsByYear: map (\yearPosts -> { year: yearPosts.year, posts: map formatPost yearPosts.posts }) $ groupPostsByYearArray posts
+  , collections: getUniqueCollections posts
   }
-  where
-  formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug }
+
+prepareCollectionContext :: Config -> Collection -> Array FrontMatterS -> Foreign
+prepareCollectionContext config collection posts = unsafeToForeign
+  { siteUrl: fromMaybe "" config.domain
+  , siteName: fromMaybe "" config.siteName
+  , collection: unsafeToForeign collection
+  , posts: map formatPost posts
+  }
 
 prepareArchiveContext :: Config -> Array { year :: Int, posts :: Array FrontMatterS } -> Foreign
 prepareArchiveContext config groupedPosts = unsafeToForeign
@@ -75,7 +85,6 @@ prepareArchiveContext config groupedPosts = unsafeToForeign
   }
   where
   formatGroup g = { year: g.year, posts: map formatPost g.posts }
-  formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug }
 
 prepare404Context :: Config -> Foreign
 prepare404Context config = unsafeToForeign { siteUrl: fromMaybe "" config.domain, siteName: fromMaybe "" config.siteName }
@@ -86,7 +95,7 @@ md2FormattedData s =
     r = md2RawFormattedData s
     status = stringToStatus r.frontMatter.status
   in
-    { frontMatter: { title: r.frontMatter.title, date: r.frontMatter.date, slug: r.frontMatter.slug, tags: r.frontMatter.tags, status: status }, content: r.content, raw: r.raw }
+    { frontMatter: { title: r.frontMatter.title, date: r.frontMatter.date, slug: r.frontMatter.slug, collections: r.frontMatter.collections, status: status }, content: r.content, raw: r.raw }
 
 getConfig :: forall m. (MonadEffect m) => m Config
 getConfig = liftEffect $ do
@@ -174,3 +183,16 @@ defaultExecSyncOptions =
   , uid: Nothing
   , windowsHide: Nothing
   }
+
+slugify :: String -> String
+slugify str = toLower str # replaceAll (Pattern " ") (Replacement "-")
+
+formatPost :: FrontMatterS -> { title :: String, date :: String, slug :: String, collections :: Array String }
+formatPost fm = { title: fm.title, date: formatDate "MMM DD, YYYY" fm.date, slug: fm.slug, collections: fm.collections }
+
+getUniqueCollections :: Array FrontMatterS -> Array Collection
+getUniqueCollections ps = concatMap (\p -> p.collections) ps
+  # Set.fromFoldable
+  # toUnfoldable
+  # map (\c -> { name: c, slug: slugify c })
+  # nubBy (\a b -> if a.slug == b.slug then EQ else LT)

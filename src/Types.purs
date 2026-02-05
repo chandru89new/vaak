@@ -19,7 +19,7 @@ type FrontMatter a =
   { title :: String
   , date :: String
   , slug :: String
-  , tags :: Array String
+  , collections :: Array String
   , status :: a
   }
 
@@ -79,3 +79,5 @@ instance showCommand :: Show Command where
   show ShowVersion = "ShowVersion"
 
 type AppM a = ReaderT Config (ExceptT Error Aff) a
+
+type Collection = { name :: String, slug :: String }

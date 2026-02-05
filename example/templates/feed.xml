@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>vāk — RSS Feed</title><link>https://vaak-blog.com/</link><description>vāk</description>
-    <lastBuildDate>{{last_updated_date}}</lastBuildDate><atom:link href="https://vaak-blog.com/feed.xml" rel="self" type="application/rss+xml"/>{{feed_items}}
+<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>notes — RSS Feed</title><link>https://notes.druchan.com/</link><description>notes</description>
+    <lastBuildDate>{{last_updated_date}}</lastBuildDate><atom:link href="https://notes.druchan.com/feed.xml" rel="self" type="application/rss+xml"/>{{feed_items}}
   </channel>
 </rss>

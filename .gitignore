@@ -7,3 +7,4 @@ output
 test-vaak
 example/public
 .cache
+example/build

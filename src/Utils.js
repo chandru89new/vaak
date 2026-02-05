@@ -19,7 +19,7 @@ const md2RawFormattedData = (string) => {
     frontMatter: {
       ...r.data,
       date: formatDate("YYYY-MM-DD")(r.data.date),
-      tags: r.data.tags?.split(",") ?? [],
+      collections: (r.data.collections?.split(",") ?? [])?.map((s) => s.trim()),
       status: r.data.status || "published"
     },
     content: md2FormattedDataService.render(r.content),
