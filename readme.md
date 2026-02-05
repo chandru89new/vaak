@@ -148,7 +148,7 @@ Each template has access to specific data when rendered:
 - `siteUrl` - Your site URL
 - `siteName` - Your site name
 
-**collection.html** (404 Error Page)
+**collection.html** (Collection Page)
 
 - `collection` - Collection name and slug:
   - `name` - Name of the collection (as in the markdown file)
