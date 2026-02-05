@@ -3,6 +3,7 @@ title: "Welcome to vāk"
 date: 2025-01-01
 slug: start-here
 status: published
+collections: Intro, Docs
 ---
 
 This is a blog powered by [vāk](https://github.com/chandru89new/vaak), a minimal static blog generator.

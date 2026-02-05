@@ -19,7 +19,13 @@
     </h3>
     <header>
       <h1>{{ title }}</h1>
-      <div class="date">{{ date }}</div>
+      <div class="date">{{ date }}
+        <span>
+          {% for collection in collections %}
+          &bull; <a href="/collection-{{collection.slug}}.html">{{collection.name}}</a>
+          {% endfor %}
+        </span>
+      </div>
     </header>
     <article>{{ content | safe }}</article>
     <footer>
