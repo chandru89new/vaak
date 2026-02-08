@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="utf-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>notes — RSS Feed</title><link>https://notes.druchan.com/</link><description>notes</description>
+    <lastBuildDate>Fri, 17 Jan 2025 12:00:00 +0530</lastBuildDate><atom:link href="https://notes.druchan.com/feed.xml" rel="self" type="application/rss+xml"/><item>
+<title>RSS Feeds</title>
+<link>https://blog.vaak.com/rss-feeds</link>
+<guid>https://blog.vaak.com/rss-feeds</guid>
+<description><![CDATA[<p>vāk automatically generates an RSS feed for your blog.</p>
+<h2 id="how-it-works" tabindex="-1"><a class="header-anchor" href="#how-it-works">How it works</a></h2>
+<p>When you run <code>vāk build</code>, it creates <code>feed.xml</code> in your output directory. This file contains your published posts in RSS format, which readers can subscribe to using feed readers like Feedly, NetNewsWire, or Inoreader.</p>
+<h2 id="subscription-url" tabindex="-1"><a class="header-anchor" href="#subscription-url">Subscription URL</a></h2>
+<p>Your feed is available at:</p>
+<pre><code>https://yourdomain.com/feed.xml
+</code></pre>
+<p>Link to it from your templates so readers can find it:</p>
+<pre><code class="language-html">&lt;a href=&quot;/feed.xml&quot;&gt;Subscribe via RSS&lt;/a&gt;
+</code></pre>
+<h2 id="what's-included" tabindex="-1"><a class="header-anchor" href="#what's-included">What's included</a></h2>
+<ul>
+<li><strong>Published posts</strong> - All posts with <code>status: published</code></li>
+<li><strong>Excluded</strong> - Posts with <code>status: draft</code> or <code>status: unlisted</code></li>
+</ul>
+<p>Posts appear in reverse chronological order (newest first).</p>
+<h2 id="customizing-the-feed" tabindex="-1"><a class="header-anchor" href="#customizing-the-feed">Customizing the feed</a></h2>
+<p>Edit <code>templates/feed.xml</code> to customize your feed. The template receives the same <code>allPosts</code> data as the homepage.</p>
+<p>Common customizations:</p>
+<ul>
+<li>Change the feed title and description</li>
+<li>Adjust how many posts appear in the feed</li>
+<li>Modify the content format</li>
+</ul>
+<h2 id="adding-feed-autodiscovery" tabindex="-1"><a class="header-anchor" href="#adding-feed-autodiscovery">Adding feed autodiscovery</a></h2>
+<p>Help feed readers find your RSS automatically by adding this to your HTML <code>&lt;head&gt;</code>:</p>
+<pre><code class="language-html">&lt;link rel=&quot;alternate&quot; type=&quot;application/rss+xml&quot;
+      title=&quot;{{ siteName }}&quot; href=&quot;{{ siteUrl }}/feed.xml&quot;&gt;
+</code></pre>
+]]></description>
+<pubDate>Fri, 17 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>The 404 Page</title>
+<link>https://blog.vaak.com/404-page</link>
+<guid>https://blog.vaak.com/404-page</guid>
+<description><![CDATA[<p>vāk generates a custom 404 error page for your blog.</p>
+<h2 id="what-is-it%3F" tabindex="-1"><a class="header-anchor" href="#what-is-it%3F">What is it?</a></h2>
+<p>The <code>404.html</code> page is shown when visitors try to access a URL that doesn't exist. Instead of a generic server error, they see your custom page.</p>
+<h2 id="customizing-it" tabindex="-1"><a class="header-anchor" href="#customizing-it">Customizing it</a></h2>
+<p>Edit <code>templates/404.html</code> to match your blog's style:</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Page Not Found - {{ siteName }}&lt;/title&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;/style.css&quot;&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;404 - Page Not Found&lt;/h1&gt;
+  &lt;p&gt;The page you're looking for doesn't exist.&lt;/p&gt;
+  &lt;p&gt;&lt;a href=&quot;/&quot;&gt;Go back home&lt;/a&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h2 id="available-data" tabindex="-1"><a class="header-anchor" href="#available-data">Available data</a></h2>
+<p>The 404 template receives:</p>
+<ul>
+<li><code>siteUrl</code> - Your site URL</li>
+<li><code>siteName</code> - Your site name</li>
+</ul>
+<h2 id="deployment-notes" tabindex="-1"><a class="header-anchor" href="#deployment-notes">Deployment notes</a></h2>
+<p>How the 404 page works depends on your hosting provider:</p>
+<h3 id="github-pages" tabindex="-1"><a class="header-anchor" href="#github-pages">GitHub Pages</a></h3>
+<p>Automatically serves <code>404.html</code> for missing pages. No configuration needed.</p>
+<h3 id="netlify" tabindex="-1"><a class="header-anchor" href="#netlify">Netlify</a></h3>
+<p>Automatically serves <code>404.html</code>. You can also add a <code>_redirects</code> file for more control.</p>
+<h3 id="vercel" tabindex="-1"><a class="header-anchor" href="#vercel">Vercel</a></h3>
+<p>Add a <code>vercel.json</code> to your output directory:</p>
+<pre><code class="language-json">{
+  &quot;routes&quot;: [
+    { &quot;handle&quot;: &quot;filesystem&quot; },
+    { &quot;src&quot;: &quot;/(.*)&quot;, &quot;dest&quot;: &quot;/404.html&quot;, &quot;status&quot;: 404 }
+  ]
+}
+</code></pre>
+<h3 id="apache" tabindex="-1"><a class="header-anchor" href="#apache">Apache</a></h3>
+<p>Add to <code>.htaccess</code>:</p>
+<pre><code>ErrorDocument 404 /404.html
+</code></pre>
+<h3 id="nginx" tabindex="-1"><a class="header-anchor" href="#nginx">Nginx</a></h3>
+<p>Add to your server config:</p>
+<pre><code>error_page 404 /404.html;
+</code></pre>
+<h2 id="testing-locally" tabindex="-1"><a class="header-anchor" href="#testing-locally">Testing locally</a></h2>
+<p>With <code>npx serve public</code>, visiting a non-existent URL won't show your 404 page (serve doesn't support custom error pages). Deploy to test the actual behavior.</p>
+]]></description>
+<pubDate>Thu, 16 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>The Archive Page</title>
+<link>https://blog.vaak.com/archive-page</link>
+<guid>https://blog.vaak.com/archive-page</guid>
+<description><![CDATA[<p>vāk generates an archive page that lists all your posts grouped by year.</p>
+<h2 id="how-it-works" tabindex="-1"><a class="header-anchor" href="#how-it-works">How it works</a></h2>
+<p>When you run <code>vāk build</code>, it creates <code>archive.html</code> in your output directory. This page shows all published posts organized chronologically.</p>
+<h2 id="linking-to-the-archive" tabindex="-1"><a class="header-anchor" href="#linking-to-the-archive">Linking to the archive</a></h2>
+<p>Add a link to your archive from your homepage or navigation:</p>
+<pre><code class="language-html">&lt;a href=&quot;/archive.html&quot;&gt;Archive&lt;/a&gt;
+</code></pre>
+<h2 id="available-data" tabindex="-1"><a class="header-anchor" href="#available-data">Available data</a></h2>
+<p>The archive template receives:</p>
+<ul>
+<li><code>postsByYear</code> - Posts grouped by year</li>
+<li><code>siteUrl</code> - Your site URL</li>
+<li><code>siteName</code> - Your site name</li>
+</ul>
+<h3 id="postsbyyear-structure" tabindex="-1"><a class="header-anchor" href="#postsbyyear-structure">postsByYear structure</a></h3>
+<pre><code class="language-javascript">[
+  {
+    year: 2025,
+    posts: [
+      { title: &quot;...&quot;, date: &quot;Jan 15, 2025&quot;, slug: &quot;...&quot;, collections: [...] },
+      { title: &quot;...&quot;, date: &quot;Jan 10, 2025&quot;, slug: &quot;...&quot;, collections: [...] }
+    ]
+  },
+  {
+    year: 2024,
+    posts: [...]
+  }
+]
+</code></pre>
+<p>Posts within each year are sorted newest first.</p>
+<h2 id="customizing-the-template" tabindex="-1"><a class="header-anchor" href="#customizing-the-template">Customizing the template</a></h2>
+<p>Edit <code>templates/archive.html</code> to change the layout:</p>
+<pre><code class="language-nunjucks">&lt;h1&gt;Archive&lt;/h1&gt;
+
+{% for group in postsByYear %}
+  &lt;section&gt;
+    &lt;h2&gt;{{ group.year }}&lt;/h2&gt;
+    &lt;ul&gt;
+      {% for post in group.posts %}
+        &lt;li&gt;
+          &lt;span&gt;{{ post.date }}&lt;/span&gt;
+          &lt;a href=&quot;./{{ post.slug }}&quot;&gt;{{ post.title }}&lt;/a&gt;
+        &lt;/li&gt;
+      {% endfor %}
+    &lt;/ul&gt;
+  &lt;/section&gt;
+{% endfor %}
+</code></pre>
+<h3 id="show-post-count-per-year" tabindex="-1"><a class="header-anchor" href="#show-post-count-per-year">Show post count per year</a></h3>
+<pre><code class="language-nunjucks">&lt;h2&gt;{{ group.year }} ({{ group.posts | length }} posts)&lt;/h2&gt;
+</code></pre>
+<h3 id="include-collections" tabindex="-1"><a class="header-anchor" href="#include-collections">Include collections</a></h3>
+<pre><code class="language-nunjucks">{% for post in group.posts %}
+  &lt;li&gt;
+    &lt;a href=&quot;./{{ post.slug }}&quot;&gt;{{ post.title }}&lt;/a&gt;
+    {% if post.collections %}
+      &lt;span class=&quot;tags&quot;&gt;
+        {% for col in post.collections %}
+          &lt;a href=&quot;/collection-{{ col.slug }}.html&quot;&gt;{{ col.name }}&lt;/a&gt;
+        {% endfor %}
+      &lt;/span&gt;
+    {% endif %}
+  &lt;/li&gt;
+{% endfor %}
+</code></pre>
+<h2 id="archive-on-the-homepage" tabindex="-1"><a class="header-anchor" href="#archive-on-the-homepage">Archive on the homepage</a></h2>
+<p>You can also use <code>postsByYear</code> on your homepage to show posts grouped by year instead of a flat list. The same data is available in <code>index.html</code>.</p>
+]]></description>
+<pubDate>Wed, 15 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>Adding JavaScript</title>
+<link>https://blog.vaak.com/adding-javascript</link>
+<guid>https://blog.vaak.com/adding-javascript</guid>
+<description><![CDATA[<p>vāk includes a <code>js/</code> directory for JavaScript files.</p>
+<h2 id="adding-scripts" tabindex="-1"><a class="header-anchor" href="#adding-scripts">Adding scripts</a></h2>
+<ol>
+<li>Add your JavaScript file to the <code>js/</code> folder</li>
+<li>Include it in your templates:</li>
+</ol>
+<pre><code class="language-html">&lt;script src=&quot;/js/my-script.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<p>Add this before the closing <code>&lt;/body&gt;</code> tag in your templates.</p>
+<h2 id="common-use-cases" tabindex="-1"><a class="header-anchor" href="#common-use-cases">Common use cases</a></h2>
+<h3 id="analytics" tabindex="-1"><a class="header-anchor" href="#analytics">Analytics</a></h3>
+<p>Add tracking scripts to monitor your blog's traffic:</p>
+<pre><code class="language-html">&lt;!-- In templates/post.html and templates/index.html --&gt;
+&lt;script async src=&quot;https://analytics.example.com/script.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h3 id="comments" tabindex="-1"><a class="header-anchor" href="#comments">Comments</a></h3>
+<p>Add a commenting system like <a href="https://utteranc.es/">Utterances</a> (uses GitHub issues):</p>
+<pre><code class="language-html">&lt;!-- In templates/post.html --&gt;
+&lt;script src=&quot;https://utteranc.es/client.js&quot;
+        repo=&quot;username/repo&quot;
+        issue-term=&quot;pathname&quot;
+        theme=&quot;github-light&quot;
+        crossorigin=&quot;anonymous&quot;
+        async&gt;
+&lt;/script&gt;
+</code></pre>
+<h3 id="syntax-highlighting" tabindex="-1"><a class="header-anchor" href="#syntax-highlighting">Syntax highlighting</a></h3>
+<p>Enhance code blocks with <a href="https://prismjs.com/">Prism.js</a> or <a href="https://highlightjs.org/">highlight.js</a>:</p>
+<pre><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;/js/prism.css&quot;&gt;
+&lt;script src=&quot;/js/prism.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h3 id="dark-mode-toggle" tabindex="-1"><a class="header-anchor" href="#dark-mode-toggle">Dark mode toggle</a></h3>
+<pre><code class="language-html">&lt;script src=&quot;/js/theme.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h2 id="per-template-scripts" tabindex="-1"><a class="header-anchor" href="#per-template-scripts">Per-template scripts</a></h2>
+<p>You can add scripts to specific templates:</p>
+<ul>
+<li><code>index.html</code> - Homepage-only scripts</li>
+<li><code>post.html</code> - Post page scripts (comments, reading time)</li>
+<li><code>archive.html</code> - Archive-specific functionality</li>
+</ul>
+<h2 id="external-scripts" tabindex="-1"><a class="header-anchor" href="#external-scripts">External scripts</a></h2>
+<p>For third-party scripts, link directly:</p>
+<pre><code class="language-html">&lt;script src=&quot;https://cdn.example.com/library.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+]]></description>
+<pubDate>Tue, 14 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>Adding Images</title>
+<link>https://blog.vaak.com/adding-images</link>
+<guid>https://blog.vaak.com/adding-images</guid>
+<description><![CDATA[<p>vāk includes an <code>images/</code> directory for your image assets.</p>
+<h2 id="using-images-in-posts" tabindex="-1"><a class="header-anchor" href="#using-images-in-posts">Using images in posts</a></h2>
+<ol>
+<li>Add your image to the <code>images/</code> folder</li>
+<li>Reference it in your markdown:</li>
+</ol>
+<pre><code class="language-markdown">![Alt text](/images/my-photo.jpg)
+</code></pre>
+<p>Or with a relative path:</p>
+<pre><code class="language-markdown">![Alt text](../images/my-photo.jpg)
+</code></pre>
+<h2 id="adding-a-favicon" tabindex="-1"><a class="header-anchor" href="#adding-a-favicon">Adding a favicon</a></h2>
+<p>The default templates look for a favicon at <code>images/favicon.png</code>. To add one:</p>
+<ol>
+<li>Create a square image (32x32 or 64x64 pixels works well)</li>
+<li>Save it as <code>images/favicon.png</code></li>
+</ol>
+<p>The favicon link in your templates:</p>
+<pre><code class="language-html">&lt;link rel=&quot;icon&quot; href=&quot;/images/favicon.png&quot;&gt;
+</code></pre>
+<h2 id="image-optimization" tabindex="-1"><a class="header-anchor" href="#image-optimization">Image optimization</a></h2>
+<p>vāk copies images as-is without processing. For best performance:</p>
+<ul>
+<li><strong>Compress images</strong> before adding them (use tools like ImageOptim, Squoosh, or TinyPNG)</li>
+<li><strong>Use appropriate formats</strong> - JPEG for photos, PNG for graphics with transparency, WebP for modern browsers</li>
+<li><strong>Size appropriately</strong> - Don't upload 4000px images if they'll display at 800px</li>
+</ul>
+<h2 id="using-images-in-templates" tabindex="-1"><a class="header-anchor" href="#using-images-in-templates">Using images in templates</a></h2>
+<p>Reference images in your HTML templates:</p>
+<pre><code class="language-html">&lt;img src=&quot;/images/logo.png&quot; alt=&quot;Site logo&quot;&gt;
+</code></pre>
+<p>Or with the site URL for absolute paths:</p>
+<pre><code class="language-html">&lt;img src=&quot;{{ siteUrl }}/images/header.jpg&quot; alt=&quot;Header&quot;&gt;
+</code></pre>
+]]></description>
+<pubDate>Mon, 13 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>Collections</title>
+<link>https://blog.vaak.com/collections</link>
+<guid>https://blog.vaak.com/collections</guid>
+<description><![CDATA[<p>Collections let you group related posts together. A post can belong to multiple collections.</p>
+<h2 id="how-to-use" tabindex="-1"><a class="header-anchor" href="#how-to-use">How to use</a></h2>
+<p>Add a <code>collections</code> field to your post's frontmatter:</p>
+<pre><code class="language-yaml">---
+title: &quot;My Post&quot;
+collections: Journal, Tutorials
+---
+</code></pre>
+<p>That's it. Your post now belongs to the &quot;Journal&quot; and &quot;Tutorials&quot; collections.</p>
+<h2 id="viewing-collections" tabindex="-1"><a class="header-anchor" href="#viewing-collections">Viewing collections</a></h2>
+<p>Each collection gets its own page at <code>/collection-{slug}.html</code>, where <code>slug</code> is a URL-safe version of the collection name.</p>
+<p>Example: <a href="/collection-feature.html">Feature collection</a></p>
+<h2 id="using-collections-in-templates" tabindex="-1"><a class="header-anchor" href="#using-collections-in-templates">Using collections in templates</a></h2>
+<p>Collections are available in these templates: <code>index.html</code>, <code>post.html</code>, <code>archive.html</code>, and <code>collection.html</code>.</p>
+<p>Each collection has two properties:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>The collection name as written in frontmatter</td>
+</tr>
+<tr>
+<td><code>slug</code></td>
+<td>URL-safe version of the name</td>
+</tr>
+</tbody>
+</table>
+<p>Example usage in <code>post.html</code>:</p>
+<pre><code class="language-html">{% for collection in collections %}
+  &lt;a href=&quot;/collection-{{collection.slug}}.html&quot;&gt;{{collection.name}}&lt;/a&gt;
+{% endfor %}
+</code></pre>
+]]></description>
+<pubDate>Sun, 12 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>Styling Your Blog</title>
+<link>https://blog.vaak.com/styling-your-blog</link>
+<guid>https://blog.vaak.com/styling-your-blog</guid>
+<description><![CDATA[<p>vāk uses a <code>style.css</code> file in your templates directory for styling.</p>
+<h2 id="how-it-works" tabindex="-1"><a class="header-anchor" href="#how-it-works">How it works</a></h2>
+<p>The <code>templates/style.css</code> file is copied to your output directory during build. All your HTML templates can reference it:</p>
+<pre><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;/style.css&quot;&gt;
+</code></pre>
+<h2 id="basic-customization" tabindex="-1"><a class="header-anchor" href="#basic-customization">Basic customization</a></h2>
+<p>Edit <code>templates/style.css</code> to change your blog's appearance:</p>
+<pre><code class="language-css">/* Typography */
+body {
+  font-family: Georgia, serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Links */
+a {
+  color: #0066cc;
+}
+
+/* Post titles */
+h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Code blocks */
+pre {
+  background: #f5f5f5;
+  padding: 1rem;
+  overflow-x: auto;
+}
+</code></pre>
+<h2 id="using-tailwind-css" tabindex="-1"><a class="header-anchor" href="#using-tailwind-css">Using Tailwind CSS</a></h2>
+<p>vāk has built-in Tailwind support. Just use Tailwind classes in your <code>templates/style.css</code>:</p>
+<pre><code class="language-css">@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Your custom styles */
+.post-title {
+  @apply text-3xl font-bold mb-4;
+}
+
+.post-date {
+  @apply text-gray-600 mb-8;
+}
+
+.prose {
+  @apply max-w-2xl mx-auto px-4 py-8;
+}
+</code></pre>
+<p>vāk automatically processes Tailwind directives during build - no separate build step needed.</p>
+<h2 id="adding-custom-fonts" tabindex="-1"><a class="header-anchor" href="#adding-custom-fonts">Adding custom fonts</a></h2>
+<h3 id="google-fonts" tabindex="-1"><a class="header-anchor" href="#google-fonts">Google Fonts</a></h3>
+<pre><code class="language-html">&lt;link href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;display=swap&quot; rel=&quot;stylesheet&quot;&gt;
+</code></pre>
+<pre><code class="language-css">body {
+  font-family: 'Inter', sans-serif;
+}
+</code></pre>
+<h3 id="self-hosted-fonts" tabindex="-1"><a class="header-anchor" href="#self-hosted-fonts">Self-hosted fonts</a></h3>
+<p>Add font files to your <code>images/</code> or <code>js/</code> directory and reference them:</p>
+<pre><code class="language-css">@font-face {
+  font-family: 'MyFont';
+  src: url('/images/myfont.woff2') format('woff2');
+}
+</code></pre>
+<h2 id="dark-mode" tabindex="-1"><a class="header-anchor" href="#dark-mode">Dark mode</a></h2>
+<p>Add a dark mode with CSS:</p>
+<pre><code class="language-css">@media (prefers-color-scheme: dark) {
+  body {
+    background: #1a1a1a;
+    color: #e0e0e0;
+  }
+  a {
+    color: #6db3f2;
+  }
+}
+</code></pre>
+<p>This automatically switches based on the user's system preference.</p>
+]]></description>
+<pubDate>Sat, 11 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>Customizing Templates</title>
+<link>https://blog.vaak.com/customizing-templates</link>
+<guid>https://blog.vaak.com/customizing-templates</guid>
+<description><![CDATA[<p>vāk uses <a href="https://mozilla.github.io/nunjucks/">Nunjucks</a> for templating. You have full control over your blog's HTML.</p>
+<h2 id="template-files" tabindex="-1"><a class="header-anchor" href="#template-files">Template files</a></h2>
+<p>When you run <code>vāk init</code>, these templates are created in <code>templates/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>index.html</code></td>
+<td>Homepage</td>
+</tr>
+<tr>
+<td><code>post.html</code></td>
+<td>Individual post pages</td>
+</tr>
+<tr>
+<td><code>archive.html</code></td>
+<td>Archive page with posts grouped by year</td>
+</tr>
+<tr>
+<td><code>collection.html</code></td>
+<td>Collection pages</td>
+</tr>
+<tr>
+<td><code>404.html</code></td>
+<td>Error page</td>
+</tr>
+<tr>
+<td><code>feed.xml</code></td>
+<td>RSS feed</td>
+</tr>
+<tr>
+<td><code>style.css</code></td>
+<td>Stylesheet</td>
+</tr>
+<tr>
+<td><code>post.md</code></td>
+<td>Template for new posts</td>
+</tr>
+</tbody>
+</table>
+<h2 id="available-data" tabindex="-1"><a class="header-anchor" href="#available-data">Available data</a></h2>
+<p>Each template receives specific data when rendered.</p>
+<h3 id="index.html" tabindex="-1"><a class="header-anchor" href="#index.html">index.html</a></h3>
+<ul>
+<li><code>allPosts</code> - All published posts (newest first)</li>
+<li><code>postsByYear</code> - Posts grouped by year</li>
+<li><code>collections</code> - All collections</li>
+<li><code>siteUrl</code>, <code>siteName</code></li>
+</ul>
+<h3 id="post.html" tabindex="-1"><a class="header-anchor" href="#post.html">post.html</a></h3>
+<ul>
+<li><code>title</code>, <code>date</code>, <code>slug</code>, <code>content</code></li>
+<li><code>collections</code> - Collections this post belongs to</li>
+<li><code>siteUrl</code>, <code>siteName</code></li>
+</ul>
+<h3 id="archive.html" tabindex="-1"><a class="header-anchor" href="#archive.html">archive.html</a></h3>
+<ul>
+<li><code>postsByYear</code> - Posts grouped by year</li>
+<li><code>siteUrl</code>, <code>siteName</code></li>
+</ul>
+<h3 id="collection.html" tabindex="-1"><a class="header-anchor" href="#collection.html">collection.html</a></h3>
+<ul>
+<li><code>collection</code> - The collection (<code>name</code> and <code>slug</code>)</li>
+<li><code>posts</code> - Posts in this collection</li>
+</ul>
+<h3 id="404.html" tabindex="-1"><a class="header-anchor" href="#404.html">404.html</a></h3>
+<ul>
+<li><code>siteUrl</code>, <code>siteName</code></li>
+</ul>
+<h2 id="nunjucks-basics" tabindex="-1"><a class="header-anchor" href="#nunjucks-basics">Nunjucks basics</a></h2>
+<pre><code class="language-nunjucks">{# Display a variable #}
+{{ title }}
+
+{# Render HTML content (for markdown) #}
+{{ content | safe }}
+
+{# Loop through posts #}
+{% for post in allPosts %}
+  &lt;a href=&quot;./{{ post.slug }}&quot;&gt;{{ post.title }}&lt;/a&gt;
+{% endfor %}
+
+{# Conditionals #}
+{% if collections %}
+  Tagged in {{ collections | length }} collections
+{% endif %}
+
+{# Limit to first 5 posts #}
+{% for post in allPosts %}
+  {% if loop.index &lt;= 5 %}
+    {{ post.title }}
+  {% endif %}
+{% endfor %}
+</code></pre>
+<h2 id="common-customizations" tabindex="-1"><a class="header-anchor" href="#common-customizations">Common customizations</a></h2>
+<h3 id="add-navigation" tabindex="-1"><a class="header-anchor" href="#add-navigation">Add navigation</a></h3>
+<pre><code class="language-html">&lt;nav&gt;
+  &lt;a href=&quot;/&quot;&gt;Home&lt;/a&gt;
+  &lt;a href=&quot;/archive.html&quot;&gt;Archive&lt;/a&gt;
+  &lt;a href=&quot;/feed.xml&quot;&gt;RSS&lt;/a&gt;
+&lt;/nav&gt;
+</code></pre>
+<h3 id="show-collections-on-posts" tabindex="-1"><a class="header-anchor" href="#show-collections-on-posts">Show collections on posts</a></h3>
+<pre><code class="language-nunjucks">{% if collections %}
+  {% for col in collections %}
+    &lt;a href=&quot;/collection-{{ col.slug }}.html&quot;&gt;{{ col.name }}&lt;/a&gt;
+  {% endfor %}
+{% endif %}
+</code></pre>
+<h3 id="group-posts-by-year-on-homepage" tabindex="-1"><a class="header-anchor" href="#group-posts-by-year-on-homepage">Group posts by year on homepage</a></h3>
+<pre><code class="language-nunjucks">{% for group in postsByYear %}
+  &lt;h2&gt;{{ group.year }}&lt;/h2&gt;
+  {% for post in group.posts %}
+    &lt;li&gt;&lt;a href=&quot;./{{ post.slug }}&quot;&gt;{{ post.title }}&lt;/a&gt;&lt;/li&gt;
+  {% endfor %}
+{% endfor %}
+</code></pre>
+<p>For more, see the <a href="https://mozilla.github.io/nunjucks/templating.html">Nunjucks documentation</a>.</p>
+]]></description>
+<pubDate>Fri, 10 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>How to publish your blog</title>
+<link>https://blog.vaak.com/publish-blog</link>
+<guid>https://blog.vaak.com/publish-blog</guid>
+<description><![CDATA[<p>Here's how to build and deploy your vāk blog.</p>
+<h2 id="set-environment-variables" tabindex="-1"><a class="header-anchor" href="#set-environment-variables">Set environment variables</a></h2>
+<p>vāk needs two environment variables:</p>
+<pre><code class="language-bash">export SITE_URL=https://yourdomain.com
+export SITE_NAME=&quot;Your Blog Name&quot;
+</code></pre>
+<p>Add these to your shell config (<code>~/.bashrc</code> or <code>~/.zshrc</code>) to make them permanent.</p>
+<h3 id="optional-variables" tabindex="-1"><a class="header-anchor" href="#optional-variables">Optional variables</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OUTPUT_DIR</code></td>
+<td><code>./public</code></td>
+<td>Where generated files go</td>
+</tr>
+<tr>
+<td><code>POSTS_DIR</code></td>
+<td><code>./posts</code></td>
+<td>Where your markdown posts are</td>
+</tr>
+</tbody>
+</table>
+<h2 id="build-the-blog" tabindex="-1"><a class="header-anchor" href="#build-the-blog">Build the blog</a></h2>
+<p>Run the build command:</p>
+<pre><code class="language-bash">./vaak.cjs build
+</code></pre>
+<p>This generates your static blog in the <code>public/</code> directory (or your custom <code>OUTPUT_DIR</code>).</p>
+<h2 id="preview-locally" tabindex="-1"><a class="header-anchor" href="#preview-locally">Preview locally</a></h2>
+<p>Before deploying, preview your blog locally:</p>
+<pre><code class="language-bash">npx serve public
+</code></pre>
+<p>Open <code>http://localhost:3000</code> to see your blog.</p>
+<h2 id="deploy" tabindex="-1"><a class="header-anchor" href="#deploy">Deploy</a></h2>
+<p>The <code>public/</code> folder contains plain HTML, CSS, and JavaScript. Deploy it anywhere that serves static files:</p>
+<h3 id="github-pages" tabindex="-1"><a class="header-anchor" href="#github-pages">GitHub Pages</a></h3>
+<p>Push the <code>public/</code> folder to a <code>gh-pages</code> branch or configure GitHub Pages to serve from a directory.</p>
+<h3 id="netlify-%2F-vercel" tabindex="-1"><a class="header-anchor" href="#netlify-%2F-vercel">Netlify / Vercel</a></h3>
+<p>Connect your repository and set the publish directory to <code>public/</code>.</p>
+<h3 id="any-static-host" tabindex="-1"><a class="header-anchor" href="#any-static-host">Any static host</a></h3>
+<p>Upload the contents of <code>public/</code> to your web server.</p>
+<h2 id="rebuild-when-you-make-changes" tabindex="-1"><a class="header-anchor" href="#rebuild-when-you-make-changes">Rebuild when you make changes</a></h2>
+<p>After editing posts or templates, run <code>./vaak.cjs build</code> again to regenerate your blog.</p>
+]]></description>
+<pubDate>Sun, 05 Jan 2025 12:00:00 +0530</pubDate>
+</item><item>
+<title>How to write a new post</title>
+<link>https://blog.vaak.com/write-new-post</link>
+<guid>https://blog.vaak.com/write-new-post</guid>
+<description><![CDATA[<p>Here's how to create and write posts in vāk.</p>
+<h2 id="create-a-new-post" tabindex="-1"><a class="header-anchor" href="#create-a-new-post">Create a new post</a></h2>
+<p>Use the <code>new</code> command with a slug (URL-friendly name):</p>
+<pre><code class="language-bash">./vaak.cjs new my-first-post
+</code></pre>
+<p>This creates <code>posts/my-first-post.md</code> with a template you can edit.</p>
+<h2 id="post-structure" tabindex="-1"><a class="header-anchor" href="#post-structure">Post structure</a></h2>
+<p>Every post needs frontmatter at the top:</p>
+<pre><code class="language-markdown">---
+title: &quot;My First Post&quot;
+date: 2025-01-15
+slug: my-first-post
+status: published
+collections: Journal, Tutorials
+---
+
+Your content starts here...
+</code></pre>
+<h3 id="frontmatter-fields" tabindex="-1"><a class="header-anchor" href="#frontmatter-fields">Frontmatter fields</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>Yes</td>
+<td>Post title (use quotes for safety)</td>
+</tr>
+<tr>
+<td><code>date</code></td>
+<td>Yes</td>
+<td>Publication date in YYYY-MM-DD format</td>
+</tr>
+<tr>
+<td><code>slug</code></td>
+<td>Yes</td>
+<td>URL-friendly identifier</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>Yes</td>
+<td><code>published</code>, <code>draft</code>, or <code>unlisted</code></td>
+</tr>
+<tr>
+<td><code>collections</code></td>
+<td>No</td>
+<td>Comma-separated list of collections</td>
+</tr>
+</tbody>
+</table>
+<h3 id="status-options" tabindex="-1"><a class="header-anchor" href="#status-options">Status options</a></h3>
+<ul>
+<li><strong>published</strong> - Appears everywhere (homepage, archive, RSS)</li>
+<li><strong>draft</strong> - Not generated at all</li>
+<li><strong>unlisted</strong> - Accessible by URL but hidden from listings</li>
+</ul>
+<h2 id="writing-content" tabindex="-1"><a class="header-anchor" href="#writing-content">Writing content</a></h2>
+<p>Write your post in Markdown. Standard syntax works:</p>
+<pre><code class="language-markdown">## Headings
+
+Paragraphs with **bold** and *italic* text.
+
+- Bullet lists
+- Like this
+
+1. Numbered lists
+2. Work too
+
+[Links](https://example.com) and `inline code`.
+
+Code blocks with syntax highlighting:
+
+​```javascript
+const greeting = &quot;Hello, world!&quot;;
+​```
+</code></pre>
+<h2 id="next-steps" tabindex="-1"><a class="header-anchor" href="#next-steps">Next steps</a></h2>
+<p>After writing, <a href="/publish-blog">build and publish your blog</a>.</p>
+]]></description>
+<pubDate>Sat, 04 Jan 2025 12:00:00 +0530</pubDate>
+</item>
+  </channel>
+</rss>

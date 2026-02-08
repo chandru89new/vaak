@@ -87,6 +87,10 @@ li code {
   @apply font-mono text-xs px-1 py-1 bg-slate-200 dark:bg-slate-800 leading-5 rounded;
 }
 
+pre {
+  @apply font-mono bg-slate-200 dark:bg-slate-800 text-xs p-2 rounded;
+}
+
 .hljs {
   @apply rounded border border-slate-200 bg-slate-100 dark:border-slate-900 dark:bg-slate-800 dark:text-slate-400;
 }

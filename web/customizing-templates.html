@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customizing Templates — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>Customizing Templates</h1>
+      <div class="date">Jan 10, 2025
+        <span>
+          
+          &bull; <a href="/collection-feature.html">Feature</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>vāk uses <a href="https://mozilla.github.io/nunjucks/">Nunjucks</a> for templating. You have full control over your blog's HTML.</p>
+<h2 id="template-files" tabindex="-1"><a class="header-anchor" href="#template-files">Template files</a></h2>
+<p>When you run <code>vāk init</code>, these templates are created in <code>templates/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>index.html</code></td>
+<td>Homepage</td>
+</tr>
+<tr>
+<td><code>post.html</code></td>
+<td>Individual post pages</td>
+</tr>
+<tr>
+<td><code>archive.html</code></td>
+<td>Archive page with posts grouped by year</td>
+</tr>
+<tr>
+<td><code>collection.html</code></td>
+<td>Collection pages</td>
+</tr>
+<tr>
+<td><code>404.html</code></td>
+<td>Error page</td>
+</tr>
+<tr>
+<td><code>feed.xml</code></td>
+<td>RSS feed</td>
+</tr>
+<tr>
+<td><code>style.css</code></td>
+<td>Stylesheet</td>
+</tr>
+<tr>
+<td><code>post.md</code></td>
+<td>Template for new posts</td>
+</tr>
+</tbody>
+</table>
+<h2 id="available-data" tabindex="-1"><a class="header-anchor" href="#available-data">Available data</a></h2>
+<p>Each template receives specific data when rendered.</p>
+<h3 id="index.html" tabindex="-1"><a class="header-anchor" href="#index.html">index.html</a></h3>
+<ul>
+<li><code>allPosts</code> - All published posts (newest first)</li>
+<li><code>postsByYear</code> - Posts grouped by year</li>
+<li><code>collections</code> - All collections</li>
+<li><code>siteUrl</code>, <code>siteName</code></li>
+</ul>
+<h3 id="post.html" tabindex="-1"><a class="header-anchor" href="#post.html">post.html</a></h3>
+<ul>
+<li><code>title</code>, <code>date</code>, <code>slug</code>, <code>content</code></li>
+<li><code>collections</code> - Collections this post belongs to</li>
+<li><code>siteUrl</code>, <code>siteName</code></li>
+</ul>
+<h3 id="archive.html" tabindex="-1"><a class="header-anchor" href="#archive.html">archive.html</a></h3>
+<ul>
+<li><code>postsByYear</code> - Posts grouped by year</li>
+<li><code>siteUrl</code>, <code>siteName</code></li>
+</ul>
+<h3 id="collection.html" tabindex="-1"><a class="header-anchor" href="#collection.html">collection.html</a></h3>
+<ul>
+<li><code>collection</code> - The collection (<code>name</code> and <code>slug</code>)</li>
+<li><code>posts</code> - Posts in this collection</li>
+</ul>
+<h3 id="404.html" tabindex="-1"><a class="header-anchor" href="#404.html">404.html</a></h3>
+<ul>
+<li><code>siteUrl</code>, <code>siteName</code></li>
+</ul>
+<h2 id="nunjucks-basics" tabindex="-1"><a class="header-anchor" href="#nunjucks-basics">Nunjucks basics</a></h2>
+<pre><code class="language-nunjucks">{# Display a variable #}
+{{ title }}
+
+{# Render HTML content (for markdown) #}
+{{ content | safe }}
+
+{# Loop through posts #}
+{% for post in allPosts %}
+  &lt;a href=&quot;./{{ post.slug }}&quot;&gt;{{ post.title }}&lt;/a&gt;
+{% endfor %}
+
+{# Conditionals #}
+{% if collections %}
+  Tagged in {{ collections | length }} collections
+{% endif %}
+
+{# Limit to first 5 posts #}
+{% for post in allPosts %}
+  {% if loop.index &lt;= 5 %}
+    {{ post.title }}
+  {% endif %}
+{% endfor %}
+</code></pre>
+<h2 id="common-customizations" tabindex="-1"><a class="header-anchor" href="#common-customizations">Common customizations</a></h2>
+<h3 id="add-navigation" tabindex="-1"><a class="header-anchor" href="#add-navigation">Add navigation</a></h3>
+<pre><code class="language-html">&lt;nav&gt;
+  &lt;a href=&quot;/&quot;&gt;Home&lt;/a&gt;
+  &lt;a href=&quot;/archive.html&quot;&gt;Archive&lt;/a&gt;
+  &lt;a href=&quot;/feed.xml&quot;&gt;RSS&lt;/a&gt;
+&lt;/nav&gt;
+</code></pre>
+<h3 id="show-collections-on-posts" tabindex="-1"><a class="header-anchor" href="#show-collections-on-posts">Show collections on posts</a></h3>
+<pre><code class="language-nunjucks">{% if collections %}
+  {% for col in collections %}
+    &lt;a href=&quot;/collection-{{ col.slug }}.html&quot;&gt;{{ col.name }}&lt;/a&gt;
+  {% endfor %}
+{% endif %}
+</code></pre>
+<h3 id="group-posts-by-year-on-homepage" tabindex="-1"><a class="header-anchor" href="#group-posts-by-year-on-homepage">Group posts by year on homepage</a></h3>
+<pre><code class="language-nunjucks">{% for group in postsByYear %}
+  &lt;h2&gt;{{ group.year }}&lt;/h2&gt;
+  {% for post in group.posts %}
+    &lt;li&gt;&lt;a href=&quot;./{{ post.slug }}&quot;&gt;{{ post.title }}&lt;/a&gt;&lt;/li&gt;
+  {% endfor %}
+{% endfor %}
+</code></pre>
+<p>For more, see the <a href="https://mozilla.github.io/nunjucks/templating.html">Nunjucks documentation</a>.</p>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to publish your blog — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>How to publish your blog</h1>
+      <div class="date">Jan 05, 2025
+        <span>
+          
+          &bull; <a href="/collection-getting-started.html">Getting started</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>Here's how to build and deploy your vāk blog.</p>
+<h2 id="set-environment-variables" tabindex="-1"><a class="header-anchor" href="#set-environment-variables">Set environment variables</a></h2>
+<p>vāk needs two environment variables:</p>
+<pre><code class="language-bash">export SITE_URL=https://yourdomain.com
+export SITE_NAME=&quot;Your Blog Name&quot;
+</code></pre>
+<p>Add these to your shell config (<code>~/.bashrc</code> or <code>~/.zshrc</code>) to make them permanent.</p>
+<h3 id="optional-variables" tabindex="-1"><a class="header-anchor" href="#optional-variables">Optional variables</a></h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OUTPUT_DIR</code></td>
+<td><code>./public</code></td>
+<td>Where generated files go</td>
+</tr>
+<tr>
+<td><code>POSTS_DIR</code></td>
+<td><code>./posts</code></td>
+<td>Where your markdown posts are</td>
+</tr>
+</tbody>
+</table>
+<h2 id="build-the-blog" tabindex="-1"><a class="header-anchor" href="#build-the-blog">Build the blog</a></h2>
+<p>Run the build command:</p>
+<pre><code class="language-bash">./vaak.cjs build
+</code></pre>
+<p>This generates your static blog in the <code>public/</code> directory (or your custom <code>OUTPUT_DIR</code>).</p>
+<h2 id="preview-locally" tabindex="-1"><a class="header-anchor" href="#preview-locally">Preview locally</a></h2>
+<p>Before deploying, preview your blog locally:</p>
+<pre><code class="language-bash">npx serve public
+</code></pre>
+<p>Open <code>http://localhost:3000</code> to see your blog.</p>
+<h2 id="deploy" tabindex="-1"><a class="header-anchor" href="#deploy">Deploy</a></h2>
+<p>The <code>public/</code> folder contains plain HTML, CSS, and JavaScript. Deploy it anywhere that serves static files:</p>
+<h3 id="github-pages" tabindex="-1"><a class="header-anchor" href="#github-pages">GitHub Pages</a></h3>
+<p>Push the <code>public/</code> folder to a <code>gh-pages</code> branch or configure GitHub Pages to serve from a directory.</p>
+<h3 id="netlify-%2F-vercel" tabindex="-1"><a class="header-anchor" href="#netlify-%2F-vercel">Netlify / Vercel</a></h3>
+<p>Connect your repository and set the publish directory to <code>public/</code>.</p>
+<h3 id="any-static-host" tabindex="-1"><a class="header-anchor" href="#any-static-host">Any static host</a></h3>
+<p>Upload the contents of <code>public/</code> to your web server.</p>
+<h2 id="rebuild-when-you-make-changes" tabindex="-1"><a class="header-anchor" href="#rebuild-when-you-make-changes">Rebuild when you make changes</a></h2>
+<p>After editing posts or templates, run <code>./vaak.cjs build</code> again to regenerate your blog.</p>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

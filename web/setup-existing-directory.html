@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to setup vāk in an existing directory — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>How to setup vāk in an existing directory</h1>
+      <div class="date">Jan 03, 2025
+        <span>
+          
+          &bull; <a href="/collection-getting-started.html">Getting started</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>Already have a folder with content? Here's how to add vāk to it.</p>
+<h2 id="steps" tabindex="-1"><a class="header-anchor" href="#steps">Steps</a></h2>
+<ol>
+<li>
+<p>Download <code>vaak.cjs</code> from the <a href="https://github.com/chandru89new/vaak/releases/latest">releases page</a></p>
+</li>
+<li>
+<p>Place it in your project directory</p>
+</li>
+<li>
+<p>Make it executable:</p>
+</li>
+</ol>
+<pre><code class="language-bash">chmod +x vaak.cjs
+</code></pre>
+<ol start="4">
+<li>Initialize vāk:</li>
+</ol>
+<pre><code class="language-bash">./vaak.cjs init
+</code></pre>
+<p>This creates the required folder structure:</p>
+<pre><code>your-project/
+├── posts/          # Your markdown posts go here
+├── templates/      # Nunjucks templates
+├── images/         # Image assets
+├── js/             # JavaScript files
+└── public/         # Generated output (created on build)
+</code></pre>
+<h2 id="what-if-i-already-have-a-posts-folder%3F" tabindex="-1"><a class="header-anchor" href="#what-if-i-already-have-a-posts-folder%3F">What if I already have a posts folder?</a></h2>
+<p>vāk won't overwrite existing files. If you have a <code>posts/</code> directory, it stays untouched. The <code>init</code> command only creates what's missing.</p>
+<h2 id="what-if-my-posts-are-in-a-different-directory%3F" tabindex="-1"><a class="header-anchor" href="#what-if-my-posts-are-in-a-different-directory%3F">What if my posts are in a different directory?</a></h2>
+<p>If your markdown files live somewhere other than <code>posts/</code>, use the <code>POSTS_DIR</code> environment variable:</p>
+<pre><code class="language-bash">export POSTS_DIR=./content
+./vaak.cjs build
+</code></pre>
+<p>This tells vāk to look for posts in <code>./content</code> instead of the default <code>./posts</code>.</p>
+<p>For example, if your existing structure looks like this:</p>
+<pre><code>my-project/
+├── articles/       # Your existing markdown files
+├── assets/
+└── ...
+</code></pre>
+<p>Just set <code>POSTS_DIR</code> to point to your articles folder:</p>
+<pre><code class="language-bash">export POSTS_DIR=./articles
+./vaak.cjs build
+</code></pre>
+<p>Add this to your shell config (<code>~/.bashrc</code> or <code>~/.zshrc</code>) to make it permanent.</p>
+<h2 id="next-steps" tabindex="-1"><a class="header-anchor" href="#next-steps">Next steps</a></h2>
+<ul>
+<li><a href="/write-new-post">Write your first post</a></li>
+<li><a href="/publish-blog">Build and publish your blog</a></li>
+</ul>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

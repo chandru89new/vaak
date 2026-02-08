@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Archive Page — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>The Archive Page</h1>
+      <div class="date">Jan 15, 2025
+        <span>
+          
+          &bull; <a href="/collection-feature.html">Feature</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>vāk generates an archive page that lists all your posts grouped by year.</p>
+<h2 id="how-it-works" tabindex="-1"><a class="header-anchor" href="#how-it-works">How it works</a></h2>
+<p>When you run <code>vāk build</code>, it creates <code>archive.html</code> in your output directory. This page shows all published posts organized chronologically.</p>
+<h2 id="linking-to-the-archive" tabindex="-1"><a class="header-anchor" href="#linking-to-the-archive">Linking to the archive</a></h2>
+<p>Add a link to your archive from your homepage or navigation:</p>
+<pre><code class="language-html">&lt;a href=&quot;/archive.html&quot;&gt;Archive&lt;/a&gt;
+</code></pre>
+<h2 id="available-data" tabindex="-1"><a class="header-anchor" href="#available-data">Available data</a></h2>
+<p>The archive template receives:</p>
+<ul>
+<li><code>postsByYear</code> - Posts grouped by year</li>
+<li><code>siteUrl</code> - Your site URL</li>
+<li><code>siteName</code> - Your site name</li>
+</ul>
+<h3 id="postsbyyear-structure" tabindex="-1"><a class="header-anchor" href="#postsbyyear-structure">postsByYear structure</a></h3>
+<pre><code class="language-javascript">[
+  {
+    year: 2025,
+    posts: [
+      { title: &quot;...&quot;, date: &quot;Jan 15, 2025&quot;, slug: &quot;...&quot;, collections: [...] },
+      { title: &quot;...&quot;, date: &quot;Jan 10, 2025&quot;, slug: &quot;...&quot;, collections: [...] }
+    ]
+  },
+  {
+    year: 2024,
+    posts: [...]
+  }
+]
+</code></pre>
+<p>Posts within each year are sorted newest first.</p>
+<h2 id="customizing-the-template" tabindex="-1"><a class="header-anchor" href="#customizing-the-template">Customizing the template</a></h2>
+<p>Edit <code>templates/archive.html</code> to change the layout:</p>
+<pre><code class="language-nunjucks">&lt;h1&gt;Archive&lt;/h1&gt;
+
+{% for group in postsByYear %}
+  &lt;section&gt;
+    &lt;h2&gt;{{ group.year }}&lt;/h2&gt;
+    &lt;ul&gt;
+      {% for post in group.posts %}
+        &lt;li&gt;
+          &lt;span&gt;{{ post.date }}&lt;/span&gt;
+          &lt;a href=&quot;./{{ post.slug }}&quot;&gt;{{ post.title }}&lt;/a&gt;
+        &lt;/li&gt;
+      {% endfor %}
+    &lt;/ul&gt;
+  &lt;/section&gt;
+{% endfor %}
+</code></pre>
+<h3 id="show-post-count-per-year" tabindex="-1"><a class="header-anchor" href="#show-post-count-per-year">Show post count per year</a></h3>
+<pre><code class="language-nunjucks">&lt;h2&gt;{{ group.year }} ({{ group.posts | length }} posts)&lt;/h2&gt;
+</code></pre>
+<h3 id="include-collections" tabindex="-1"><a class="header-anchor" href="#include-collections">Include collections</a></h3>
+<pre><code class="language-nunjucks">{% for post in group.posts %}
+  &lt;li&gt;
+    &lt;a href=&quot;./{{ post.slug }}&quot;&gt;{{ post.title }}&lt;/a&gt;
+    {% if post.collections %}
+      &lt;span class=&quot;tags&quot;&gt;
+        {% for col in post.collections %}
+          &lt;a href=&quot;/collection-{{ col.slug }}.html&quot;&gt;{{ col.name }}&lt;/a&gt;
+        {% endfor %}
+      &lt;/span&gt;
+    {% endif %}
+  &lt;/li&gt;
+{% endfor %}
+</code></pre>
+<h2 id="archive-on-the-homepage" tabindex="-1"><a class="header-anchor" href="#archive-on-the-homepage">Archive on the homepage</a></h2>
+<p>You can also use <code>postsByYear</code> on your homepage to show posts grouped by year instead of a flat list. The same data is available in <code>index.html</code>.</p>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

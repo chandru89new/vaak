@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to write a new post — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>How to write a new post</h1>
+      <div class="date">Jan 04, 2025
+        <span>
+          
+          &bull; <a href="/collection-getting-started.html">Getting started</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>Here's how to create and write posts in vāk.</p>
+<h2 id="create-a-new-post" tabindex="-1"><a class="header-anchor" href="#create-a-new-post">Create a new post</a></h2>
+<p>Use the <code>new</code> command with a slug (URL-friendly name):</p>
+<pre><code class="language-bash">./vaak.cjs new my-first-post
+</code></pre>
+<p>This creates <code>posts/my-first-post.md</code> with a template you can edit.</p>
+<h2 id="post-structure" tabindex="-1"><a class="header-anchor" href="#post-structure">Post structure</a></h2>
+<p>Every post needs frontmatter at the top:</p>
+<pre><code class="language-markdown">---
+title: &quot;My First Post&quot;
+date: 2025-01-15
+slug: my-first-post
+status: published
+collections: Journal, Tutorials
+---
+
+Your content starts here...
+</code></pre>
+<h3 id="frontmatter-fields" tabindex="-1"><a class="header-anchor" href="#frontmatter-fields">Frontmatter fields</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>Yes</td>
+<td>Post title (use quotes for safety)</td>
+</tr>
+<tr>
+<td><code>date</code></td>
+<td>Yes</td>
+<td>Publication date in YYYY-MM-DD format</td>
+</tr>
+<tr>
+<td><code>slug</code></td>
+<td>Yes</td>
+<td>URL-friendly identifier</td>
+</tr>
+<tr>
+<td><code>status</code></td>
+<td>Yes</td>
+<td><code>published</code>, <code>draft</code>, or <code>unlisted</code></td>
+</tr>
+<tr>
+<td><code>collections</code></td>
+<td>No</td>
+<td>Comma-separated list of collections</td>
+</tr>
+</tbody>
+</table>
+<h3 id="status-options" tabindex="-1"><a class="header-anchor" href="#status-options">Status options</a></h3>
+<ul>
+<li><strong>published</strong> - Appears everywhere (homepage, archive, RSS)</li>
+<li><strong>draft</strong> - Not generated at all</li>
+<li><strong>unlisted</strong> - Accessible by URL but hidden from listings</li>
+</ul>
+<h2 id="writing-content" tabindex="-1"><a class="header-anchor" href="#writing-content">Writing content</a></h2>
+<p>Write your post in Markdown. Standard syntax works:</p>
+<pre><code class="language-markdown">## Headings
+
+Paragraphs with **bold** and *italic* text.
+
+- Bullet lists
+- Like this
+
+1. Numbered lists
+2. Work too
+
+[Links](https://example.com) and `inline code`.
+
+Code blocks with syntax highlighting:
+
+​```javascript
+const greeting = &quot;Hello, world!&quot;;
+​```
+</code></pre>
+<h2 id="next-steps" tabindex="-1"><a class="header-anchor" href="#next-steps">Next steps</a></h2>
+<p>After writing, <a href="/publish-blog">build and publish your blog</a>.</p>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

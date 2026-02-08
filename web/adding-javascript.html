@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adding JavaScript — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>Adding JavaScript</h1>
+      <div class="date">Jan 14, 2025
+        <span>
+          
+          &bull; <a href="/collection-feature.html">Feature</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>vāk includes a <code>js/</code> directory for JavaScript files.</p>
+<h2 id="adding-scripts" tabindex="-1"><a class="header-anchor" href="#adding-scripts">Adding scripts</a></h2>
+<ol>
+<li>Add your JavaScript file to the <code>js/</code> folder</li>
+<li>Include it in your templates:</li>
+</ol>
+<pre><code class="language-html">&lt;script src=&quot;/js/my-script.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<p>Add this before the closing <code>&lt;/body&gt;</code> tag in your templates.</p>
+<h2 id="common-use-cases" tabindex="-1"><a class="header-anchor" href="#common-use-cases">Common use cases</a></h2>
+<h3 id="analytics" tabindex="-1"><a class="header-anchor" href="#analytics">Analytics</a></h3>
+<p>Add tracking scripts to monitor your blog's traffic:</p>
+<pre><code class="language-html">&lt;!-- In templates/post.html and templates/index.html --&gt;
+&lt;script async src=&quot;https://analytics.example.com/script.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h3 id="comments" tabindex="-1"><a class="header-anchor" href="#comments">Comments</a></h3>
+<p>Add a commenting system like <a href="https://utteranc.es/">Utterances</a> (uses GitHub issues):</p>
+<pre><code class="language-html">&lt;!-- In templates/post.html --&gt;
+&lt;script src=&quot;https://utteranc.es/client.js&quot;
+        repo=&quot;username/repo&quot;
+        issue-term=&quot;pathname&quot;
+        theme=&quot;github-light&quot;
+        crossorigin=&quot;anonymous&quot;
+        async&gt;
+&lt;/script&gt;
+</code></pre>
+<h3 id="syntax-highlighting" tabindex="-1"><a class="header-anchor" href="#syntax-highlighting">Syntax highlighting</a></h3>
+<p>Enhance code blocks with <a href="https://prismjs.com/">Prism.js</a> or <a href="https://highlightjs.org/">highlight.js</a>:</p>
+<pre><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;/js/prism.css&quot;&gt;
+&lt;script src=&quot;/js/prism.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h3 id="dark-mode-toggle" tabindex="-1"><a class="header-anchor" href="#dark-mode-toggle">Dark mode toggle</a></h3>
+<pre><code class="language-html">&lt;script src=&quot;/js/theme.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h2 id="per-template-scripts" tabindex="-1"><a class="header-anchor" href="#per-template-scripts">Per-template scripts</a></h2>
+<p>You can add scripts to specific templates:</p>
+<ul>
+<li><code>index.html</code> - Homepage-only scripts</li>
+<li><code>post.html</code> - Post page scripts (comments, reading time)</li>
+<li><code>archive.html</code> - Archive-specific functionality</li>
+</ul>
+<h2 id="external-scripts" tabindex="-1"><a class="header-anchor" href="#external-scripts">External scripts</a></h2>
+<p>For third-party scripts, link directly:</p>
+<pre><code class="language-html">&lt;script src=&quot;https://cdn.example.com/library.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

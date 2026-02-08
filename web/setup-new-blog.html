@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to setup a new blog with vāk — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>How to setup a new blog with vāk</h1>
+      <div class="date">Jan 02, 2025
+        <span>
+          
+          &bull; <a href="/collection-getting-started.html">Getting started</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>Starting from scratch? Here's how to create a new blog with vāk.</p>
+<h2 id="steps" tabindex="-1"><a class="header-anchor" href="#steps">Steps</a></h2>
+<ol>
+<li>Create a new directory for your blog:</li>
+</ol>
+<pre><code class="language-bash">mkdir my-blog
+cd my-blog
+</code></pre>
+<ol start="2">
+<li>
+<p>Download <code>vaak.cjs</code> from the <a href="https://github.com/chandru89new/vaak/releases/latest">releases page</a></p>
+</li>
+<li>
+<p>Make it executable:</p>
+</li>
+</ol>
+<pre><code class="language-bash">chmod +x vaak.cjs
+</code></pre>
+<ol start="4">
+<li>Initialize your blog:</li>
+</ol>
+<pre><code class="language-bash">./vaak.cjs init
+</code></pre>
+<p>This creates everything you need:</p>
+<pre><code>my-blog/
+├── posts/          # Your markdown posts
+├── templates/      # HTML templates (index, post, archive, etc.)
+├── images/         # Image assets
+├── js/             # JavaScript files
+└── public/         # Generated blog (after build)
+</code></pre>
+<h2 id="optional%3A-add-v%C4%81k-to-your-path" tabindex="-1"><a class="header-anchor" href="#optional%3A-add-v%C4%81k-to-your-path">Optional: Add vāk to your PATH</a></h2>
+<p>For easier access, add an alias to your shell config:</p>
+<pre><code class="language-bash"># Add to ~/.bashrc or ~/.zshrc
+alias vāk=/path/to/vaak.cjs
+</code></pre>
+<p>Now you can run <code>vāk build</code> from anywhere.</p>
+<h2 id="next-steps" tabindex="-1"><a class="header-anchor" href="#next-steps">Next steps</a></h2>
+<ul>
+<li><a href="/write-new-post">Write your first post</a></li>
+<li><a href="/publish-blog">Build and publish your blog</a></li>
+</ul>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RSS Feeds — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>RSS Feeds</h1>
+      <div class="date">Jan 17, 2025
+        <span>
+          
+          &bull; <a href="/collection-feature.html">Feature</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>vāk automatically generates an RSS feed for your blog.</p>
+<h2 id="how-it-works" tabindex="-1"><a class="header-anchor" href="#how-it-works">How it works</a></h2>
+<p>When you run <code>vāk build</code>, it creates <code>feed.xml</code> in your output directory. This file contains your published posts in RSS format, which readers can subscribe to using feed readers like Feedly, NetNewsWire, or Inoreader.</p>
+<h2 id="subscription-url" tabindex="-1"><a class="header-anchor" href="#subscription-url">Subscription URL</a></h2>
+<p>Your feed is available at:</p>
+<pre><code>https://yourdomain.com/feed.xml
+</code></pre>
+<p>Link to it from your templates so readers can find it:</p>
+<pre><code class="language-html">&lt;a href=&quot;/feed.xml&quot;&gt;Subscribe via RSS&lt;/a&gt;
+</code></pre>
+<h2 id="what's-included" tabindex="-1"><a class="header-anchor" href="#what's-included">What's included</a></h2>
+<ul>
+<li><strong>Published posts</strong> - All posts with <code>status: published</code></li>
+<li><strong>Excluded</strong> - Posts with <code>status: draft</code> or <code>status: unlisted</code></li>
+</ul>
+<p>Posts appear in reverse chronological order (newest first).</p>
+<h2 id="customizing-the-feed" tabindex="-1"><a class="header-anchor" href="#customizing-the-feed">Customizing the feed</a></h2>
+<p>Edit <code>templates/feed.xml</code> to customize your feed. The template receives the same <code>allPosts</code> data as the homepage.</p>
+<p>Common customizations:</p>
+<ul>
+<li>Change the feed title and description</li>
+<li>Adjust how many posts appear in the feed</li>
+<li>Modify the content format</li>
+</ul>
+<h2 id="adding-feed-autodiscovery" tabindex="-1"><a class="header-anchor" href="#adding-feed-autodiscovery">Adding feed autodiscovery</a></h2>
+<p>Help feed readers find your RSS automatically by adding this to your HTML <code>&lt;head&gt;</code>:</p>
+<pre><code class="language-html">&lt;link rel=&quot;alternate&quot; type=&quot;application/rss+xml&quot;
+      title=&quot;{{ siteName }}&quot; href=&quot;{{ siteUrl }}/feed.xml&quot;&gt;
+</code></pre>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

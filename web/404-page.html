@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The 404 Page — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>The 404 Page</h1>
+      <div class="date">Jan 16, 2025
+        <span>
+          
+          &bull; <a href="/collection-feature.html">Feature</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>vāk generates a custom 404 error page for your blog.</p>
+<h2 id="what-is-it%3F" tabindex="-1"><a class="header-anchor" href="#what-is-it%3F">What is it?</a></h2>
+<p>The <code>404.html</code> page is shown when visitors try to access a URL that doesn't exist. Instead of a generic server error, they see your custom page.</p>
+<h2 id="customizing-it" tabindex="-1"><a class="header-anchor" href="#customizing-it">Customizing it</a></h2>
+<p>Edit <code>templates/404.html</code> to match your blog's style:</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;title&gt;Page Not Found - {{ siteName }}&lt;/title&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;/style.css&quot;&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;404 - Page Not Found&lt;/h1&gt;
+  &lt;p&gt;The page you're looking for doesn't exist.&lt;/p&gt;
+  &lt;p&gt;&lt;a href=&quot;/&quot;&gt;Go back home&lt;/a&gt;&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h2 id="available-data" tabindex="-1"><a class="header-anchor" href="#available-data">Available data</a></h2>
+<p>The 404 template receives:</p>
+<ul>
+<li><code>siteUrl</code> - Your site URL</li>
+<li><code>siteName</code> - Your site name</li>
+</ul>
+<h2 id="deployment-notes" tabindex="-1"><a class="header-anchor" href="#deployment-notes">Deployment notes</a></h2>
+<p>How the 404 page works depends on your hosting provider:</p>
+<h3 id="github-pages" tabindex="-1"><a class="header-anchor" href="#github-pages">GitHub Pages</a></h3>
+<p>Automatically serves <code>404.html</code> for missing pages. No configuration needed.</p>
+<h3 id="netlify" tabindex="-1"><a class="header-anchor" href="#netlify">Netlify</a></h3>
+<p>Automatically serves <code>404.html</code>. You can also add a <code>_redirects</code> file for more control.</p>
+<h3 id="vercel" tabindex="-1"><a class="header-anchor" href="#vercel">Vercel</a></h3>
+<p>Add a <code>vercel.json</code> to your output directory:</p>
+<pre><code class="language-json">{
+  &quot;routes&quot;: [
+    { &quot;handle&quot;: &quot;filesystem&quot; },
+    { &quot;src&quot;: &quot;/(.*)&quot;, &quot;dest&quot;: &quot;/404.html&quot;, &quot;status&quot;: 404 }
+  ]
+}
+</code></pre>
+<h3 id="apache" tabindex="-1"><a class="header-anchor" href="#apache">Apache</a></h3>
+<p>Add to <code>.htaccess</code>:</p>
+<pre><code>ErrorDocument 404 /404.html
+</code></pre>
+<h3 id="nginx" tabindex="-1"><a class="header-anchor" href="#nginx">Nginx</a></h3>
+<p>Add to your server config:</p>
+<pre><code>error_page 404 /404.html;
+</code></pre>
+<h2 id="testing-locally" tabindex="-1"><a class="header-anchor" href="#testing-locally">Testing locally</a></h2>
+<p>With <code>npx serve public</code>, visiting a non-existent URL won't show your 404 page (serve doesn't support custom error pages). Deploy to test the actual behavior.</p>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

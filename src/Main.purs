@@ -37,7 +37,7 @@ main = do
   case cmd of
     Test -> test
     Help -> log $ helpText
-    ShowVersion -> log $ "v0.10.1"
+    ShowVersion -> log $ "v0.10.2"
     Init -> launchAff_ $ do
       config <- getConfig
       res <- runAppM config initApp
@@ -81,6 +81,8 @@ buildSite = do
   config <- ask
   when (isNothing config.domain) $ liftAppM $ throwError $ error "SITE_URL is required. Set it in your environment (e.g. SITE_URL=https://my.blog)."
   when (isNothing config.siteName) $ liftAppM $ throwError $ error "SITE_NAME is required. Set it in your environment (e.g. SITE_NAME=\"My Blog\")."
+  when (config.outputFolder == "./templates" || config.outputFolder == "templates") $ do
+    liftAppM $ throwError $ error "Output folder cannot be the same as `templates` folder."
   liftAppM $ Logs.logInfo "Starting..."
   liftAppM $ createFolderIfNotPresent tmpFolder
   { published, draft } <- generatePostsHTML

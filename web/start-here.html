@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to vāk — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>Welcome to vāk</h1>
+      <div class="date">Jan 01, 2025
+        <span>
+          
+          &bull; <a href="/collection-getting-started.html">Getting started</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>This is a blog powered by <a href="https://github.com/chandru89new/vaak">vāk</a>, a minimal static blog generator.</p>
+<h2 id="what-is-v%C4%81k%3F" tabindex="-1"><a class="header-anchor" href="#what-is-v%C4%81k%3F">What is vāk?</a></h2>
+<p>vāk is a simple tool that takes your Markdown posts and turns them into a static blog. No databases, no servers, just plain HTML files you can host anywhere.</p>
+<h2 id="why-v%C4%81k%3F" tabindex="-1"><a class="header-anchor" href="#why-v%C4%81k%3F">Why vāk?</a></h2>
+<p>I wrote vāk for a few reasons:</p>
+<ul>
+<li><strong>Learning PureScript</strong> - vāk is written in PureScript, a strongly-typed functional language that compiles to JavaScript. Building a real tool was a great way to learn.</li>
+<li><strong>Simplicity</strong> - I wanted full control over my blog without the complexity of larger static site generators. vāk does one thing: convert Markdown to HTML.</li>
+<li><strong>Control</strong> - With vāk, you control the input (Markdown files), the output (HTML), and everything in between (templates). No magic, no hidden complexity.</li>
+</ul>
+<h2 id="try-it-yourself" tabindex="-1"><a class="header-anchor" href="#try-it-yourself">Try it yourself</a></h2>
+<p>You're looking at the example folder right now. Here's how to build this blog:</p>
+<ol>
+<li>Download <code>vāk.cjs</code> from the <a href="https://github.com/chandru89new/vaak/releases/latest">releases page</a></li>
+<li>Place it in this folder</li>
+<li>Run the build:</li>
+</ol>
+<pre><code class="language-bash">export SITE_URL=https://example.com
+export SITE_NAME=&quot;My Blog&quot;
+./vaak.cjs build
+</code></pre>
+<p>This creates a <code>public</code> folder with your generated blog. To preview it locally:</p>
+<pre><code class="language-bash">npx serve public
+</code></pre>
+<p>Then open <code>http://localhost:3000</code> in your browser.</p>
+<h2 id="create-your-next-post" tabindex="-1"><a class="header-anchor" href="#create-your-next-post">Create your next post</a></h2>
+<p>This very post comes from <code>posts/start-here.md</code>. Want to add another?</p>
+<pre><code class="language-bash">./vaak.cjs new my-next-post
+</code></pre>
+<p>This creates <code>posts/my-next-post.md</code>. Edit it, then rebuild:</p>
+<pre><code class="language-bash">./vaak.cjs build
+</code></pre>
+<p>Your new post will appear in the <code>public</code> folder.</p>
+<h2 id="what's-next%3F" tabindex="-1"><a class="header-anchor" href="#what's-next%3F">What's next?</a></h2>
+<ul>
+<li>Edit the templates in <code>templates/</code> to customize your blog's look</li>
+<li>Check out the <a href="https://github.com/chandru89new/vaak">README</a> for more details</li>
+<li>Start writing!</li>
+</ul>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

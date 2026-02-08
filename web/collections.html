@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collections — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>Collections</h1>
+      <div class="date">Jan 12, 2025
+        <span>
+          
+          &bull; <a href="/collection-feature.html">Feature</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>Collections let you group related posts together. A post can belong to multiple collections.</p>
+<h2 id="how-to-use" tabindex="-1"><a class="header-anchor" href="#how-to-use">How to use</a></h2>
+<p>Add a <code>collections</code> field to your post's frontmatter:</p>
+<pre><code class="language-yaml">---
+title: &quot;My Post&quot;
+collections: Journal, Tutorials
+---
+</code></pre>
+<p>That's it. Your post now belongs to the &quot;Journal&quot; and &quot;Tutorials&quot; collections.</p>
+<h2 id="viewing-collections" tabindex="-1"><a class="header-anchor" href="#viewing-collections">Viewing collections</a></h2>
+<p>Each collection gets its own page at <code>/collection-{slug}.html</code>, where <code>slug</code> is a URL-safe version of the collection name.</p>
+<p>Example: <a href="/collection-feature.html">Feature collection</a></p>
+<h2 id="using-collections-in-templates" tabindex="-1"><a class="header-anchor" href="#using-collections-in-templates">Using collections in templates</a></h2>
+<p>Collections are available in these templates: <code>index.html</code>, <code>post.html</code>, <code>archive.html</code>, and <code>collection.html</code>.</p>
+<p>Each collection has two properties:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>The collection name as written in frontmatter</td>
+</tr>
+<tr>
+<td><code>slug</code></td>
+<td>URL-safe version of the name</td>
+</tr>
+</tbody>
+</table>
+<p>Example usage in <code>post.html</code>:</p>
+<pre><code class="language-html">{% for collection in collections %}
+  &lt;a href=&quot;/collection-{{collection.slug}}.html&quot;&gt;{{collection.name}}&lt;/a&gt;
+{% endfor %}
+</code></pre>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>
