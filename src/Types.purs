@@ -62,6 +62,7 @@ type Config =
 
 data Command
   = Build
+  | Rebuild
   | ShowVersion
   | Help
   | NewPost String
@@ -77,6 +78,7 @@ instance showCommand :: Show Command where
   show (NewPost _) = "NewPost"
   show Invalid = "Invalid"
   show ShowVersion = "ShowVersion"
+  show Rebuild = "Rebuild"
 
 type AppM a = ReaderT Config (ExceptT Error Aff) a
 

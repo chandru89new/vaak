@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caching — vāk</title>
+  <link href="./style.css" rel="stylesheet" />
+  <link href="./images/favicon.png" rel="icon" />
+</head>
+
+<body>
+  <div>
+    <h3 id="logo">
+      <a href="/">
+        &larr; vāk
+      </a>
+    </h3>
+    <header>
+      <h1>Caching</h1>
+      <div class="date">Jan 18, 2025
+        <span>
+          
+          &bull; <a href="/collection-feature.html">Feature</a>
+          
+        </span>
+      </div>
+    </header>
+    <article><p>vāk caches builds to speed up your workflow. Unchanged files don't need re-building, so subsequent builds are faster.</p>
+<h2 id="how-it-works" tabindex="-1"><a class="header-anchor" href="#how-it-works">How it works</a></h2>
+<p>Build cache data is stored in a <code>.cache</code> file in your project directory. When you run <code>vāk build</code>, only modified posts and templates are processed.</p>
+<h2 id="rebuilding-everything" tabindex="-1"><a class="header-anchor" href="#rebuilding-everything">Rebuilding everything</a></h2>
+<p>To force a complete rebuild:</p>
+<pre><code class="language-bash">vāk rebuild
+</code></pre>
+<p>This removes the <code>.cache</code> file and rebuilds the entire site.</p>
+<h2 id="common-scenarios" tabindex="-1"><a class="header-anchor" href="#common-scenarios">Common scenarios</a></h2>
+<p><strong>Deleted a post but its HTML file still exists?</strong></p>
+<p>This happens because the cache doesn't track deletions. Either remove the HTML file directly from your output directory, or use <code>vāk rebuild</code> to rebuild from scratch which will remove the deleted posts' HTML files.</p>
+<p><strong>Updated a template but changes aren't showing?</strong></p>
+<p>Template changes may not invalidate the cache properly. Run a full rebuild:</p>
+<pre><code class="language-bash">vāk rebuild
+</code></pre>
+</article>
+    <footer>
+      <a href="/">&larr; blog</a>
+      <span>&bull;</span>
+      <a href="/archive">archives</a>
+      <span>&bull;</span>
+      <a href="/feed.xml">rss feed</a>
+    </footer>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const articleLinks = Array.from(document.querySelectorAll("article a"));
+      const externalArticleLinks = articleLinks.filter(
+        (link) => link?.getAttribute("href")?.startsWith("http")
+      );
+      externalArticleLinks.forEach((link) => link?.setAttribute("target", "_blank"));
+    });
+  </script>
+</body>
+
+</html>

@@ -34,6 +34,9 @@ vāk provides several commands to manage your static blog:
 # Build the blog
 ./vaak.cjs build
 
+# Rebuild from scratch (removes .cache and output folder, then builds)
+./vaak.cjs rebuild
+
 # Show version information
 ./vaak.cjs version
 

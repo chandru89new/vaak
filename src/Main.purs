@@ -21,7 +21,7 @@ import Logs as Logs
 import Node.Buffer (Buffer)
 import Node.ChildProcess (execSync, execSync')
 import Node.Encoding (Encoding(..))
-import Node.FS.Aff (readTextFile, readdir, writeTextFile)
+import Node.FS.Aff (readTextFile, readdir, rm, rmdir, rmdir', writeTextFile)
 import Node.FS.Sync (exists)
 import Node.Process (argv, exit, exit')
 import Nunjucks (renderTemplate)
@@ -34,37 +34,48 @@ main :: Effect Unit
 main = do
   args <- argv
   cmd <- pure $ mkCommand args
-  case cmd of
-    Test -> test
-    Help -> log $ helpText
-    ShowVersion -> log $ "v0.10.2"
-    Init -> launchAff_ $ do
-      config <- getConfig
-      res <- runAppM config initApp
-      case res of
-        Left err -> Logs.logError $ "Could not initialize the app: " <> show err
-        Right _ -> Logs.logSuccess $ "Templates generated in " <> templateFolder <> ". You can edit them."
-    NewPost slug -> launchAff_ $ do
-      config <- getConfig
-      res <- runAppM config (createNewPost slug)
-      case res of
-        Left err -> do
-          _ <- Logs.logError ("Could not create a new post: " <> show err)
-          liftEffect $ exit' 1
-        Right _ -> Logs.logSuccess "Created new post. Happy writing!"
-    Invalid -> do
-      Logs.logError $ "Invalid command."
-      log $ helpText
-      exit' 1
-    Build -> launchAff_ $ do
-      config <- getConfig
-      res <- runAppM config buildSite
-      _ <- liftEffect $ try $ execSync ("rm -rf " <> tmpFolder)
-      case res of
-        Left err -> do
-          Logs.logError $ "Error when building the site: " <> show err
-          liftEffect $ exit' 1
-        Right _ -> Logs.logSuccess $ "Site built and available in the " <> config.outputFolder <> " folder."
+  runCmd cmd
+
+runCmd :: Command -> Effect Unit
+runCmd cmd = case cmd of
+  Test -> test
+  Help -> log $ helpText
+  ShowVersion -> log $ "v0.11.0"
+  Init -> launchAff_ $ do
+    config <- getConfig
+    res <- runAppM config initApp
+    case res of
+      Left err -> Logs.logError $ "Could not initialize the app: " <> show err
+      Right _ -> Logs.logSuccess $ "Templates generated in " <> templateFolder <> ". You can edit them."
+  NewPost slug -> launchAff_ $ do
+    config <- getConfig
+    res <- runAppM config (createNewPost slug)
+    case res of
+      Left err -> do
+        _ <- Logs.logError ("Could not create a new post: " <> show err)
+        liftEffect $ exit' 1
+      Right _ -> Logs.logSuccess "Created new post. Happy writing!"
+  Invalid -> do
+    Logs.logError $ "Invalid command."
+    log $ helpText
+    exit' 1
+  Rebuild -> do
+    config <- getConfig
+    res <- try $ execSync ("rm -rf .cache " <> config.outputFolder)
+    case res of
+      Right _ -> runCmd Build
+      Left e -> do
+        Logs.logError $ "Error when running rebuild: " <> show e
+        exit' 1
+  Build -> launchAff_ $ do
+    config <- getConfig
+    res <- runAppM config buildSite
+    _ <- liftEffect $ try $ execSync ("rm -rf " <> tmpFolder)
+    case res of
+      Left err -> do
+        Logs.logError $ "Error when building the site: " <> show err
+        liftEffect $ exit' 1
+      Right _ -> Logs.logSuccess $ "Site built and available in the " <> config.outputFolder <> " folder."
 
 helpText :: String
 helpText =
@@ -127,6 +138,7 @@ mkCommand xs = case head (drop 2 xs) of
   Just "help" -> Help
   Just "init" -> Init
   Just "build" -> Build
+  Just "rebuild" -> Rebuild
   Just "new" -> case head $ drop 3 xs of
     Just slug -> NewPost slug
     _ -> Invalid
