@@ -26,11 +26,11 @@
         <div>
           <ul>
             {% for post in allPosts | reverse %}
-              {% for col in post.collections %}
-                {% if col.name == "Getting started" %}
-                  <li><a href="./{{ post.slug }}">{{ post.title }}</a></li>
-                {% endif %}
-              {% endfor %}
+            {% for col in post.collections %}
+            {% if col.name == "Getting started" %}
+            <li><a href="./{{ post.slug }}">{{ post.title }}</a></li>
+            {% endif %}
+            {% endfor %}
             {% endfor %}
           </ul>
         </div>
@@ -40,11 +40,11 @@
         <div>
           <ul>
             {% for post in allPosts | reverse %}
-              {% for col in post.collections %}
-                {% if col.name == "Feature" %}
-                  <li><a href="./{{ post.slug }}">{{ post.title }}</a></li>
-                {% endif %}
-              {% endfor %}
+            {% for col in post.collections %}
+            {% if col.name == "Feature" %}
+            <li><a href="./{{ post.slug }}">{{ post.title }}</a></li>
+            {% endif %}
+            {% endfor %}
             {% endfor %}
           </ul>
         </div>
@@ -57,6 +57,8 @@
       </section>
     </article>
     <footer>
+      <a href="https://github.com/chandru89new/vaak">github</a>
+      <span>&bull;</span>
       <a href="/archive">archive</a>
       <span>&bull;</span>
       <a href="/feed.xml">rss feed</a>
