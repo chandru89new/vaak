@@ -84,6 +84,7 @@ helpText =
   version - print version info.
   init - initialize the project.
   build - build the site.
+  rebuild - rebuild the site (invalidate cache).
   new [slug] - create a new post.
 """
 
