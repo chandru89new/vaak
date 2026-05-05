@@ -4,6 +4,11 @@ A simple Node.js script for generating a static blog.
 
 Example: [`https://notes.druchan.com`](https://notes.druchan.com)
 
+## Prerequisites
+
+1. Node -- vak uses Node to run.
+2. [Tailwindcss CLI standalone](https://github.com/tailwindlabs/tailwindcss/releases/latest) -- vak uses Tailwindcss for styles in templates, so it needs to be available as `tailwindcss` in your command-line.
+
 ## Installation
 
 1. Download the latest `vaak.cjs` from the [releases page](https://github.com/chandru89new/vaak/releases/latest)
