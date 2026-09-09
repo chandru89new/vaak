@@ -3,7 +3,7 @@
 @import "tailwindcss";
 
 html {
-  @apply text-[16px] md:text-[20px];
+    @apply text-[16px] md:text-[20px];
 }
 
 h1,
@@ -12,63 +12,63 @@ h3,
 h4,
 h5,
 h6 {
-  @apply font-semibold;
+    @apply font-semibold;
 }
 
 body {
-  font-family: "Inter", sans-serif;
-  font-weight: 300;
-  @apply bg-slate-50 text-slate-800 p-5 md:p-10 max-w-[700px] leading-relaxed dark:bg-slate-700 dark:text-slate-200;
+    font-family: "Inter", sans-serif;
+    font-weight: 300;
+    @apply bg-slate-50 text-slate-800 p-5 md:p-10 max-w-[700px] leading-relaxed dark:bg-slate-700 dark:text-slate-200;
 }
 
 a {
-  @apply text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-700 transition;
+    @apply text-emerald-600 hover:text-emerald-900 dark:hover:text-emerald-700 transition;
 }
 
 article:not(#archive_container) a {
-  /* @apply border-b-emerald-600 hover:border-b-emerald-900 dark:border-b-emerald-700; */
-  @apply border-b border-dotted border-b-emerald-500 hover:border-b-emerald-900 dark:border-b-emerald-700;
+    /* @apply border-b-emerald-600 hover:border-b-emerald-900 dark:border-b-emerald-700; */
+    @apply border-b border-dotted border-b-emerald-500 hover:border-b-emerald-900 dark:border-b-emerald-700;
 }
 
 ul {
-  @apply space-y-2 sm:space-y-1;
+    @apply space-y-2 sm:space-y-1;
 }
 
 h1 {
-  @apply font-semibold tracking-tight text-3xl;
+    @apply font-semibold tracking-tight text-3xl;
 }
 
 #logo,
 #logo a {
-  @apply text-slate-400;
+    @apply text-slate-400;
 }
 
 #home-page-logo a {
-  @apply block font-semibold tracking-tight text-3xl;
+    @apply block font-semibold tracking-tight text-3xl;
 }
 
 article {
-  @apply space-y-6;
+    @apply space-y-6;
 }
 
 #date {
-  @apply text-sm text-slate-500;
+    @apply text-sm text-slate-500;
 }
 
 header {
-  @apply mt-3 mb-4 pb-4 border-b dark:border-b-slate-600;
+    @apply mt-3 mb-4 pb-4 border-b dark:border-b-slate-600;
 }
 
 footer {
-  @apply text-sm sm:text-base pt-4 mt-4 mb-10 border-t flex gap-x-3 dark:border-t-slate-600;
+    @apply text-sm sm:text-base pt-4 mt-4 mb-10 border-t flex gap-x-3 dark:border-t-slate-600;
 }
 
 section h3 {
-  @apply font-semibold mb-1 uppercase text-xs text-slate-400;
+    @apply font-semibold mb-1 uppercase text-xs text-slate-400;
 }
 
 .date {
-  @apply text-slate-400 text-xs;
+    @apply text-slate-400 text-xs;
 }
 
 /* code, pre {
@@ -78,46 +78,60 @@ section h3 {
 
 code,
 li code {
-  @apply font-mono text-xs px-1 py-1 bg-slate-200 dark:bg-slate-800 leading-5 rounded;
+    @apply font-mono text-xs px-1 py-1 bg-slate-200 dark:bg-slate-800 leading-5 rounded;
 }
 
 pre {
-  @apply font-mono bg-slate-200 dark:bg-slate-800 text-xs p-2 rounded;
+    @apply font-mono bg-slate-200 dark:bg-slate-800 text-xs p-2 rounded;
 }
 
 .hljs {
-  @apply rounded border border-slate-200 bg-slate-100 dark:border-slate-900 dark:bg-slate-800 dark:text-slate-400;
+    @apply rounded border border-slate-200 bg-slate-100 dark:border-slate-900 dark:bg-slate-800 dark:text-slate-400;
 }
 
 ol {
-  @apply list-decimal;
+    @apply list-decimal;
 }
 
 article:not(#archive_container) ul {
-  @apply list-disc ml-4;
+    @apply list-disc ml-4;
 }
 
 /* disable list-disc for home page list */
 section ul {
-  @apply list-none;
+    @apply list-none;
 }
 
 /* disabled list-disc for archive page list */
 article#archive_container ul {
-  @apply list-none;
+    @apply list-none;
 }
 article#archive_container ul li {
-  @apply whitespace-nowrap overflow-x-visible;
+    @apply whitespace-nowrap overflow-x-visible;
 }
 
 blockquote {
-  @apply border-l-4 border-slate-200 dark:border-slate-600 pl-4 space-y-4 text-slate-500 text-sm dark:text-slate-400 leading-relaxed;
+    @apply border-l-4 border-slate-200 dark:border-slate-600 pl-4 space-y-4 text-slate-500 text-sm dark:text-slate-400 leading-relaxed;
 }
 
 hr {
-  @apply border-slate-200 dark:border-slate-600;
+    @apply border-slate-200 dark:border-slate-600;
 }
 
 .footnote {
-  @apply text-xs;
+    @apply text-xs;
+}
+
+sup.footnote-ref {
+    @apply text-sm ml-[2px];
+}
+
+section#footnotes {
+    @apply text-[90%];
+}
+ol.footnotes-list {
+    @apply ml-4 text-sm;
+}
+ol.footnotes-list > * + * {
+    @apply mt-3 md:mt-4;
 }
