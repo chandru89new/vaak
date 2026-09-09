@@ -1,0 +1,28 @@
+package:
+  dependencies:
+  - aff
+  - aff-promise
+  - arrays
+  - console
+  - effect
+  - either
+  - exceptions
+  - foreign
+  - integers
+  - maybe
+  - node-buffer
+  - node-child-process
+  - node-fs
+  - node-path
+  - node-process
+  - ordered-collections
+  - parallel
+  - prelude
+  - strings
+  - transformers
+  - tuples
+  name: my-project
+workspace:
+  extra_packages: {}
+  package_set:
+    url: https://raw.githubusercontent.com/purescript/package-sets/psc-0.15.15-20260201/packages.json

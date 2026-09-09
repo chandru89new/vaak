@@ -21,7 +21,7 @@ import Logs as Logs
 import Node.Buffer (Buffer)
 import Node.ChildProcess (execSync, execSync')
 import Node.Encoding (Encoding(..))
-import Node.FS.Aff (readTextFile, readdir, rm, rmdir, rmdir', writeTextFile)
+import Node.FS.Aff (readTextFile, readdir, writeTextFile)
 import Node.FS.Sync (exists)
 import Node.Process (argv, exit, exit')
 import Nunjucks (renderTemplate)
@@ -40,7 +40,7 @@ runCmd :: Command -> Effect Unit
 runCmd cmd = case cmd of
   Test -> test
   Help -> log $ helpText
-  ShowVersion -> log $ "v0.11.0"
+  ShowVersion -> log $ "v0.12.0"
   Init -> launchAff_ $ do
     config <- getConfig
     res <- runAppM config initApp
